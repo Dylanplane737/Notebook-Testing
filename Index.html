@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notebook v4.5</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{--primary-bg:#2596be;--primary-dark:#0f75a8;--panel-bg:rgba(0,0,0,0.25);--text-primary:#fff;--text-secondary:rgba(255,255,255,0.7);--text-muted:rgba(255,255,255,0.45);--btn-bg:#0f75a8;--btn-hover-bg:#fff;--btn-text:#fff;--btn-hover-text:#0f75a8;--shadow:0 4px 10px rgba(0,0,0,0.2);--shadow-lg:0 8px 30px rgba(0,0,0,0.3);--radius:10px;--radius-pill:30px;--font-primary:'Orbitron','Segoe UI',system-ui,sans-serif;--font-mono:'JetBrains Mono','Consolas','Monaco',monospace;--menu-h:36px;--status-h:26px;--transition:0.3s ease;--glow-blue:0 0 12px rgba(37,150,190,0.5)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--font-primary);background:var(--primary-bg);color:var(--text-primary)}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,0.15)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.25);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.4)}
+::selection{background:rgba(37,150,190,0.5);color:#fff}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw;overflow:hidden;position:relative}
+#splash{position:fixed;inset:0;z-index:9999;background:var(--primary-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease}
+#splash.hide{opacity:0;pointer-events:none}
+#splash h1{font-family:var(--font-primary);font-size:2.4rem;font-weight:800;letter-spacing:4px;color:#fff;text-shadow:0 0 30px rgba(37,150,190,0.6)}
+#splash p{font-size:0.85rem;color:var(--text-secondary);margin-top:8px;letter-spacing:2px}
+#splash .loader{width:180px;height:3px;background:rgba(255,255,255,0.15);border-radius:3px;margin-top:24px;overflow:hidden}
+#splash .loader-bar{height:100%;width:0;background:#fff;border-radius:3px;transition:width 1.2s ease}
+#menubar{height:var(--menu-h);min-height:var(--menu-h);background:rgba(0,0,0,0.35);backdrop-filter:blur(12px);display:flex;align-items:center;padding:0 4px;z-index:500;border-bottom:1px solid rgba(255,255,255,0.06);user-select:none}
+.menu-item{position:relative;padding:0 12px;height:100%;display:flex;align-items:center;font-size:0.68rem;font-weight:600;letter-spacing:1px;cursor:pointer;color:var(--text-secondary);transition:color var(--transition),background var(--transition);border-radius:4px}
+.menu-item:hover,.menu-item.active{color:var(--text-primary);background:rgba(255,255,255,0.1)}
+.menu-item .fa-chevron-down{font-size:0.5rem;margin-left:5px;opacity:0.5}
+.dropdown{position:absolute;top:100%;left:0;min-width:240px;background:rgba(10,10,20,0.92);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:6px 0;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 0.2s,transform 0.2s;z-index:600}
+.menu-item.active .dropdown{opacity:1;pointer-events:auto;transform:translateY(0)}
+.dropdown-sep{height:1px;background:rgba(255,255,255,0.08);margin:5px 10px}
+.dropdown-item{padding:7px 14px;font-size:0.65rem;font-weight:500;letter-spacing:0.5px;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background 0.15s,color 0.15s;white-space:nowrap;font-family:var(--font-primary)}
+.dropdown-item:hover{background:rgba(37,150,190,0.25);color:var(--text-primary)}
+.dropdown-item .shortcut{font-size:0.58rem;color:var(--text-muted);margin-left:30px;font-family:var(--font-mono)}
+.dropdown-item .fa-check{font-size:0.55rem;color:var(--primary-bg);margin-right:6px;display:none}
+.dropdown-item.checked .fa-check{display:inline}
+.dropdown-item i.fa-icon{width:16px;text-align:center;margin-right:8px;font-size:0.6rem;opacity:0.6}
+.has-submenu{position:relative}
+.has-submenu::after{content:'\f054';font-family:'Font Awesome 6 Free';font-weight:900;font-size:0.45rem;position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);transition:color 0.15s}
+.has-submenu:hover::after{color:var(--text-primary)}
+.submenu{position:absolute;left:100%;top:-6px;min-width:200px;background:rgba(10,10,20,0.92);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:6px 0;opacity:0;pointer-events:none;transform:translateX(-4px);transition:opacity 0.2s,transform 0.2s}
+.has-submenu:hover>.submenu{opacity:1;pointer-events:auto;transform:translateX(0)}
+#find-replace-panel{position:absolute;top:var(--menu-h);left:50%;transform:translateX(-50%);background:rgba(10,10,20,0.95);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:12px 16px;display:none;z-index:450;gap:8px;align-items:center;flex-wrap:wrap;min-width:520px}
+#find-replace-panel.show{display:flex}
+#find-replace-panel input{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--text-primary);padding:5px 10px;font-size:0.7rem;font-family:var(--font-mono);outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
+#find-replace-panel input:focus{border-color:var(--primary-bg);box-shadow:var(--glow-blue)}
+#find-replace-panel label{font-size:0.6rem;color:var(--text-muted);letter-spacing:0.5px}
+.fr-btn{background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:var(--radius-pill);padding:4px 14px;font-size:0.6rem;font-weight:700;font-family:var(--font-primary);cursor:pointer;transition:all var(--transition);letter-spacing:0.5px}
+.fr-btn:hover{background:var(--btn-hover-bg);color:var(--btn-hover-text);box-shadow:var(--glow-blue)}
+#main-content{flex:1;display:flex;overflow:hidden;position:relative}
+#sidebar{width:0;min-width:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(12px);border-right:1px solid rgba(255,255,255,0.06);overflow:hidden;transition:width 0.3s ease,min-width 0.3s ease;display:flex;flex-direction:column}
+#sidebar.open{width:220px;min-width:220px}
+#sidebar h4{padding:12px 14px 8px;font-size:0.6rem;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase}
+.sidebar-item{padding:6px 14px;font-size:0.62rem;color:var(--text-secondary);cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:8px}
+.sidebar-item:hover{background:rgba(255,255,255,0.06);color:var(--text-primary)}
+.sidebar-item i{font-size:0.55rem;opacity:0.5;width:14px;text-align:center}
+#editor-panel{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:var(--panel-bg)}
+#editor-wrapper{flex:1;display:flex;overflow:hidden;position:relative}
+#line-numbers{width:44px;min-width:44px;padding:12px 6px 12px 0;text-align:right;font-family:var(--font-mono);font-size:0.72rem;line-height:1.6;color:var(--text-muted);background:rgba(0,0,0,0.12);border-right:1px solid rgba(255,255,255,0.06);overflow:hidden;user-select:none;white-space:pre}
+#line-numbers.hidden{display:none}
+#editor{flex:1;resize:none;border:none;outline:none;padding:12px 14px;font-family:var(--font-mono);font-size:0.78rem;line-height:1.6;background:transparent;color:var(--text-primary);tab-size:4;white-space:pre-wrap;overflow:auto}
+[data-theme="light"] #editor{background:#fff;color:#1a1a1a}
+[data-theme="light"] #line-numbers{background:#f0f0f0;color:#999}
+[data-theme="dark"] #editor{background:#1e1e1e;color:#d4d4d4}
+[data-theme="dark"] #line-numbers{background:#161616;color:#555}
+[data-theme="cyberpunk"] #editor{background:#0a0a1a;color:#00ffcc;text-shadow:0 0 4px rgba(0,255,204,0.2)}
+[data-theme="cyberpunk"] #line-numbers{background:#060612;color:#335544}
+[data-theme="sepia"] #editor{background:#f4ecd8;color:#5b4636}
+[data-theme="sepia"] #line-numbers{background:#e8dfc8;color:#a08c72}
+#focus-overlay{position:absolute;inset:0;pointer-events:none;z-index:10;display:none}
+#focus-overlay.show{display:block}
+#divider{width:5px;min-width:5px;background:rgba(255,255,255,0.04);cursor:col-resize;transition:background 0.2s;position:relative;z-index:20}
+#divider:hover,#divider.dragging{background:var(--primary-bg)}
+#divider::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:30px;border-radius:2px;background:rgba(255,255,255,0.15)}
+#preview-panel{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--panel-bg)}
+#preview-header{padding:6px 12px;font-size:0.58rem;letter-spacing:1px;color:var(--text-muted);background:rgba(0,0,0,0.12);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:6px}
+#preview-header i{font-size:0.5rem}
+#preview{flex:1;border:none;background:#fff;width:100%;height:100%}
+#status-bar{height:var(--status-h);min-height:var(--status-h);background:rgba(0,0,0,0.4);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;padding:0 12px;font-size:0.55rem;letter-spacing:0.5px;color:var(--text-muted);gap:16px;z-index:500}
+#status-bar.hidden{display:none}
+.status-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.status-item i{font-size:0.5rem;opacity:0.6}
+.status-spacer{flex:1}
+.status-credit{opacity:0.4;font-style:italic;font-size:0.5rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-box{background:rgba(15,15,25,0.97);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:14px;box-shadow:var(--shadow-lg);width:90%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;transform:scale(0.95) translateY(10px);transition:transform 0.25s;overflow:hidden}
+.modal-overlay.show .modal-box{transform:scale(1) translateY(0)}
+.modal-header{padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06)}
+.modal-header h3{font-size:0.8rem;font-weight:700;letter-spacing:1.5px}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:0.9rem;cursor:pointer;padding:4px;transition:color 0.15s}
+.modal-close:hover{color:var(--text-primary)}
+.modal-body{padding:16px 20px;overflow-y:auto;flex:1;font-size:0.68rem;line-height:1.7;color:var(--text-secondary)}
+.modal-footer{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid rgba(255,255,255,0.06)}
+.m-input,.m-select,.m-textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text-primary);padding:8px 12px;font-size:0.68rem;font-family:var(--font-mono);outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
+.m-input:focus,.m-select:focus,.m-textarea:focus{border-color:var(--primary-bg);box-shadow:var(--glow-blue)}
+.m-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.4)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.m-select option{background:#1a1a2e;color:#fff}
+.m-label{display:block;font-size:0.6rem;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;font-weight:600}
+.m-group{margin-bottom:12px}
+.m-row{display:flex;gap:10px}
+.m-row>*{flex:1}
+.m-btn{background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:var(--radius-pill);padding:7px 22px;font-size:0.65rem;font-weight:700;font-family:var(--font-primary);cursor:pointer;transition:all var(--transition);letter-spacing:0.8px}
+.m-btn:hover{background:var(--btn-hover-bg);color:var(--btn-hover-text);box-shadow:var(--glow-blue);transform:translateY(-1px)}
+.m-btn-secondary{background:rgba(255,255,255,0.08);color:var(--text-secondary)}
+.m-btn-secondary:hover{background:rgba(255,255,255,0.15);color:var(--text-primary);box-shadow:none}
+#toast-container{position:fixed;bottom:40px;right:16px;z-index:10000;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:var(--radius);font-size:0.65rem;font-family:var(--font-primary);font-weight:500;letter-spacing:0.5px;color:#fff;pointer-events:auto;opacity:0;transform:translateX(30px);transition:all 0.3s ease;max-width:340px;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(0)}
+.toast-info{background:rgba(37,150,190,0.92);backdrop-filter:blur(10px)}
+.toast-success{background:rgba(34,139,34,0.92);backdrop-filter:blur(10px)}
+.toast-error{background:rgba(200,50,50,0.92);backdrop-filter:blur(10px)}
+.toast-warning{background:rgba(200,150,30,0.92);backdrop-filter:blur(10px)}
+#macro-indicator{position:fixed;top:44px;right:16px;background:rgba(220,40,40,0.9);color:#fff;padding:4px 14px;border-radius:var(--radius-pill);font-size:0.58rem;font-weight:700;letter-spacing:1px;z-index:800;display:none;animation:macroPulse 1s infinite}
+#macro-indicator.show{display:flex;align-items:center;gap:6px}
+@keyframes macroPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+#exit-screen{position:fixed;inset:0;background:var(--primary-bg);z-index:9500;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#exit-screen.show{display:flex}
+#exit-screen h1{font-size:2rem;font-weight:800;letter-spacing:3px;margin-bottom:12px}
+#exit-screen p{color:var(--text-secondary);font-size:0.8rem;margin-bottom:24px}
+#app.fullscreen #menubar,#app.fullscreen #status-bar{display:none}
+#app.distraction-free #menubar,#app.distraction-free #status-bar,#app.distraction-free #sidebar{display:none}
+#app.distraction-free #preview-panel,#app.distraction-free #divider{display:none}
+#app.distraction-free #editor-panel{flex:1}
+#editor{transform-origin:top left}
+@media print{#menubar,#status-bar,#sidebar,#divider,#preview-panel,#find-replace-panel,#macro-indicator{display:none!important}#editor-panel{flex:1!important}#app{background:#fff!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+@media(max-width:700px){.dropdown{min-width:200px}.submenu{left:auto;right:100%}#find-replace-panel{min-width:auto;width:95vw}}
+</style>
+</head>
+<body>
+<div id="splash"><h1>NOTEBOOK v4.5</h1><p>LOADING EDITOR...</p><div class="loader"><div class="loader-bar" id="splash-bar"></div></div></div>
+<div id="macro-indicator"><i class="fas fa-circle"></i> REC</div>
+<div id="toast-container"></div>
+<div id="app">
+<nav id="menubar" role="menubar" aria-label="Main menu">
+<div class="menu-item" data-menu="file">FILE <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item" data-action="new-file"><i class="fas fa-file fa-icon"></i>New File<span class="shortcut">Ctrl+N</span></div>
+<div class="dropdown-item" data-action="open-file"><i class="fas fa-folder-open fa-icon"></i>Open File<span class="shortcut">Ctrl+O</span></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="save"><i class="fas fa-floppy-disk fa-icon"></i>Save<span class="shortcut">Ctrl+S</span></div>
+<div class="dropdown-item" data-action="save-as"><i class="fas fa-file-pen fa-icon"></i>Save As<span class="shortcut">Ctrl+Shift+S</span></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-download fa-icon"></i>Download As / Export
+<div class="submenu">
+<div class="dropdown-item" data-action="download-txt">Plain Text (.txt)</div>
+<div class="dropdown-item" data-action="download-rtf">Rich Text Format (.rtf)</div>
+<div class="dropdown-item" data-action="download-md">Markdown (.md)</div>
+<div class="dropdown-item" data-action="download-html">HTML Document (.html)</div>
+<div class="dropdown-item" data-action="download-pdf">PDF Document (.pdf)</div>
+<div class="dropdown-item" data-action="download-xml">XML Document (.xml)</div>
+<div class="dropdown-item" data-action="download-json">JSON File (.json)</div>
+</div></div>
+<div class="dropdown-item" data-action="page-setup"><i class="fas fa-file-lines fa-icon"></i>Page Setup</div>
+<div class="dropdown-item" data-action="print"><i class="fas fa-print fa-icon"></i>Print<span class="shortcut">Ctrl+P</span></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="share-email"><i class="fas fa-envelope fa-icon"></i>Share / Email</div>
+<div class="dropdown-item" data-action="file-properties"><i class="fas fa-circle-info fa-icon"></i>File Properties / Info</div>
+<div class="dropdown-item" data-action="recent-files"><i class="fas fa-clock-rotate-left fa-icon"></i>Recent Files</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="close-file"><i class="fas fa-xmark fa-icon"></i>Close File</div>
+<div class="dropdown-item" data-action="exit-editor"><i class="fas fa-right-from-bracket fa-icon"></i>Exit Editor</div>
+</div></div>
+<div class="menu-item" data-menu="edit">EDIT <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item" data-action="undo"><i class="fas fa-rotate-left fa-icon"></i>Undo<span class="shortcut">Ctrl+Z</span></div>
+<div class="dropdown-item" data-action="redo"><i class="fas fa-rotate-right fa-icon"></i>Redo<span class="shortcut">Ctrl+Y</span></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="cut"><i class="fas fa-scissors fa-icon"></i>Cut<span class="shortcut">Ctrl+X</span></div>
+<div class="dropdown-item" data-action="copy"><i class="fas fa-copy fa-icon"></i>Copy<span class="shortcut">Ctrl+C</span></div>
+<div class="dropdown-item" data-action="paste"><i class="fas fa-paste fa-icon"></i>Paste<span class="shortcut">Ctrl+V</span></div>
+<div class="dropdown-item" data-action="paste-plain"><i class="fas fa-paste fa-icon"></i>Paste Without Formatting</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="delete-sel"><i class="fas fa-trash fa-icon"></i>Delete<span class="shortcut">Del</span></div>
+<div class="dropdown-item" data-action="select-all"><i class="fas fa-object-group fa-icon"></i>Select All<span class="shortcut">Ctrl+A</span></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="find-replace"><i class="fas fa-magnifying-glass fa-icon"></i>Find and Replace<span class="shortcut">Ctrl+H</span></div>
+<div class="dropdown-item" data-action="clear-all"><i class="fas fa-broom fa-icon"></i>Clear All Text</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="dup-line"><i class="fas fa-clone fa-icon"></i>Duplicate Line<span class="shortcut">Ctrl+D</span></div>
+<div class="dropdown-item" data-action="move-up"><i class="fas fa-arrow-up fa-icon"></i>Move Line Up<span class="shortcut">Alt+Up</span></div>
+<div class="dropdown-item" data-action="move-down"><i class="fas fa-arrow-down fa-icon"></i>Move Line Down<span class="shortcut">Alt+Down</span></div>
+</div></div>
+<div class="menu-item" data-menu="format">FORMAT <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item has-submenu"><i class="fas fa-code fa-icon"></i>Text Mode
+<div class="submenu">
+<div class="dropdown-item checked" data-action="mode-plain"><i class="fa fa-check fa-check"></i>Plain Text</div>
+<div class="dropdown-item" data-action="mode-html"><i class="fa fa-check fa-check"></i>HTML Document</div>
+<div class="dropdown-item" data-action="mode-markdown"><i class="fa fa-check fa-check"></i>Markdown</div>
+</div></div>
+<div class="dropdown-item" data-action="font-picker"><i class="fas fa-font fa-icon"></i>Font</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-bold fa-icon"></i>Text Style
+<div class="submenu">
+<div class="dropdown-item" data-action="style-bold">Bold<span class="shortcut">Ctrl+B</span></div>
+<div class="dropdown-item" data-action="style-italic">Italic<span class="shortcut">Ctrl+I</span></div>
+<div class="dropdown-item" data-action="style-underline">Underline<span class="shortcut">Ctrl+U</span></div>
+<div class="dropdown-item" data-action="style-strike">Strikethrough</div>
+<div class="dropdown-item" data-action="style-sup">Superscript</div>
+<div class="dropdown-item" data-action="style-sub">Subscript</div>
+</div></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-text-height fa-icon"></i>Text Case
+<div class="submenu">
+<div class="dropdown-item" data-action="case-upper">UPPERCASE</div>
+<div class="dropdown-item" data-action="case-lower">lowercase</div>
+<div class="dropdown-item" data-action="case-title">Title Case</div>
+<div class="dropdown-item" data-action="case-sentence">Sentence case</div>
+</div></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-align-left fa-icon"></i>Alignment
+<div class="submenu">
+<div class="dropdown-item" data-action="align-left">Align Left</div>
+<div class="dropdown-item" data-action="align-center">Align Center</div>
+<div class="dropdown-item" data-action="align-right">Align Right</div>
+<div class="dropdown-item" data-action="align-justify">Justify</div>
+</div></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-arrows-up-down fa-icon"></i>Line Spacing
+<div class="submenu">
+<div class="dropdown-item checked" data-action="ls-single"><i class="fa fa-check fa-check"></i>Single</div>
+<div class="dropdown-item" data-action="ls-1-5"><i class="fa fa-check fa-check"></i>1.5</div>
+<div class="dropdown-item" data-action="ls-double"><i class="fa fa-check fa-check"></i>Double</div>
+</div></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-arrows-left-right fa-icon"></i>Word Wrap
+<div class="submenu">
+<div class="dropdown-item checked" data-action="wrap-on"><i class="fa fa-check fa-check"></i>On</div>
+<div class="dropdown-item" data-action="wrap-off"><i class="fa fa-check fa-check"></i>Off</div>
+</div></div>
+</div></div>
+<div class="menu-item" data-menu="insert">INSERT <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item has-submenu"><i class="fas fa-hashtag fa-icon"></i>Special Character / Symbol
+<div class="submenu">
+<div class="dropdown-item has-submenu">Math &amp; Logic
+<div class="submenu">
+<div class="dropdown-item" data-action="ins-char" data-char="±">± Plus-Minus</div>
+<div class="dropdown-item" data-action="ins-char" data-char="≠">≠ Not Equal</div>
+<div class="dropdown-item" data-action="ins-char" data-char="∞">∞ Infinity</div>
+<div class="dropdown-item" data-action="ins-char" data-char="π">π Pi</div>
+<div class="dropdown-item" data-action="ins-char" data-char="√">√ Square Root</div>
+<div class="dropdown-item" data-action="ins-char" data-char="∑">∑ Summation</div>
+<div class="dropdown-item" data-action="ins-char" data-char="∫">∫ Integral</div>
+<div class="dropdown-item" data-action="ins-char" data-char="≈">≈ Approximately</div>
+</div></div>
+<div class="dropdown-item has-submenu">Currency
+<div class="submenu">
+<div class="dropdown-item" data-action="ins-char" data-char="$">$ Dollar</div>
+<div class="dropdown-item" data-action="ins-char" data-char="€">€ Euro</div>
+<div class="dropdown-item" data-action="ins-char" data-char="£">£ Pound</div>
+<div class="dropdown-item" data-action="ins-char" data-char="¥">¥ Yen</div>
+<div class="dropdown-item" data-action="ins-char" data-char="₹">₹ Rupee</div>
+<div class="dropdown-item" data-action="ins-char" data-char="₿">₿ Bitcoin</div>
+</div></div>
+<div class="dropdown-item has-submenu">Typography
+<div class="submenu">
+<div class="dropdown-item" data-action="ins-char" data-char="—">— Em Dash</div>
+<div class="dropdown-item" data-action="ins-char" data-char="…">… Ellipsis</div>
+<div class="dropdown-item" data-action="ins-char" data-char="§">§ Section</div>
+<div class="dropdown-item" data-action="ins-char" data-char="™">™ Trademark</div>
+<div class="dropdown-item" data-action="ins-char" data-char="©">© Copyright</div>
+<div class="dropdown-item" data-action="ins-char" data-char="®">® Registered</div>
+</div></div>
+<div class="dropdown-item has-submenu">Arrows
+<div class="submenu">
+<div class="dropdown-item" data-action="ins-char" data-char="←">← Left</div>
+<div class="dropdown-item" data-action="ins-char" data-char="→">→ Right</div>
+<div class="dropdown-item" data-action="ins-char" data-char="↑">↑ Up</div>
+<div class="dropdown-item" data-action="ins-char" data-char="↓">↓ Down</div>
+<div class="dropdown-item" data-action="ins-char" data-char="↔">↔ Left-Right</div>
+<div class="dropdown-item" data-action="ins-char" data-char="⇒">⇒ Double Right</div>
+</div></div>
+</div></div>
+<div class="dropdown-item" data-action="insert-datetime"><i class="fas fa-calendar fa-icon"></i>Date and Time</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="insert-hyperlink"><i class="fas fa-link fa-icon"></i>Hyperlink</div>
+<div class="dropdown-item" data-action="insert-image"><i class="fas fa-image fa-icon"></i>Image</div>
+<div class="dropdown-item" data-action="insert-table"><i class="fas fa-table fa-icon"></i>Table</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="insert-hr"><i class="fas fa-minus fa-icon"></i>Horizontal Rule</div>
+<div class="dropdown-item" data-action="insert-pagebreak"><i class="fas fa-file fa-icon"></i>Page Break</div>
+<div class="dropdown-item" data-action="insert-codeblock"><i class="fas fa-code fa-icon"></i>Code Block</div>
+</div></div>
+<div class="menu-item" data-menu="view">VIEW <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item" data-action="zoom-in"><i class="fas fa-magnifying-glass-plus fa-icon"></i>Zoom In<span class="shortcut">Ctrl+=</span></div>
+<div class="dropdown-item" data-action="zoom-out"><i class="fas fa-magnifying-glass-minus fa-icon"></i>Zoom Out<span class="shortcut">Ctrl+-</span></div>
+<div class="dropdown-item" data-action="zoom-actual"><i class="fas fa-expand fa-icon"></i>Actual Size<span class="shortcut">Ctrl+0</span></div>
+<div class="dropdown-item" data-action="zoom-reset"><i class="fas fa-arrows-to-dot fa-icon"></i>Reset Zoom</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="fullscreen"><i class="fas fa-up-right-and-down-left-from-center fa-icon"></i>Full Screen Mode<span class="shortcut">F11</span></div>
+<div class="dropdown-item" data-action="distraction-free"><i class="fas fa-eye fa-icon"></i>Distraction-Free Mode</div>
+<div class="dropdown-item" data-action="focus-mode"><i class="fas fa-crosshairs fa-icon"></i>Focus Mode</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-columns fa-icon"></i>Split Screen Layout
+<div class="submenu">
+<div class="dropdown-item checked" data-action="split-50"><i class="fa fa-check fa-check"></i>50 / 50</div>
+<div class="dropdown-item" data-action="split-70"><i class="fa fa-check fa-check"></i>70 / 30 (Editor)</div>
+<div class="dropdown-item" data-action="split-30"><i class="fa fa-check fa-check"></i>30 / 70 (Preview)</div>
+<div class="dropdown-item" data-action="split-editor"><i class="fa fa-check fa-check"></i>Editor Only</div>
+<div class="dropdown-item" data-action="split-preview"><i class="fa fa-check fa-check"></i>Preview Only</div>
+</div></div>
+<div class="dropdown-item" data-action="toggle-sidebar"><i class="fas fa-bars fa-icon"></i>Toggle Sidebar</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item checked" data-action="toggle-statusbar"><i class="fa fa-check fa-check"></i>Toggle Status Bar</div>
+<div class="dropdown-item checked" data-action="toggle-linenums"><i class="fa fa-check fa-check"></i>Toggle Line Numbers</div>
+<div class="dropdown-item" data-action="toggle-invisible"><i class="fas fa-eye-slash fa-icon"></i>Toggle Invisible Characters</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-palette fa-icon"></i>Editor Theme
+<div class="submenu">
+<div class="dropdown-item" data-action="theme-light">Light</div>
+<div class="dropdown-item checked" data-action="theme-dark"><i class="fa fa-check fa-check"></i>Dark</div>
+<div class="dropdown-item" data-action="theme-cyberpunk">Cyberpunk</div>
+<div class="dropdown-item" data-action="theme-sepia">Sepia</div>
+</div></div>
+</div></div>
+<div class="menu-item" data-menu="tools">TOOLS <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item" data-action="word-count"><i class="fas fa-chart-bar fa-icon"></i>Word Count &amp; Analytics</div>
+<div class="dropdown-item" data-action="spell-check"><i class="fas fa-spell-check fa-icon"></i>Spell Check &amp; Auto-Correct</div>
+<div class="dropdown-item" data-action="grammar-check"><i class="fas fa-pen-fancy fa-icon"></i>Grammar Check</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-arrow-down-a-z fa-icon"></i>Text Sort
+<div class="submenu">
+<div class="dropdown-item" data-action="sort-az">Alphabetical A-Z</div>
+<div class="dropdown-item" data-action="sort-za">Alphabetical Z-A</div>
+</div></div>
+<div class="dropdown-item" data-action="remove-dupes"><i class="fas fa-filter fa-icon"></i>Remove Duplicate Lines</div>
+<div class="dropdown-item" data-action="trim-whitespace"><i class="fas fa-scissors fa-icon"></i>Trim Trailing Whitespace</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-lock fa-icon"></i>Base64
+<div class="submenu">
+<div class="dropdown-item" data-action="b64-encode">Encode</div>
+<div class="dropdown-item" data-action="b64-decode">Decode</div>
+</div></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-globe fa-icon"></i>URL
+<div class="submenu">
+<div class="dropdown-item" data-action="url-encode">Encode</div>
+<div class="dropdown-item" data-action="url-decode">Decode</div>
+</div></div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="html-beautify"><i class="fas fa-wand-magic-sparkles fa-icon"></i>HTML Beautifier</div>
+<div class="dropdown-item" data-action="html-minify"><i class="fas fa-compress fa-icon"></i>HTML Minifier</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item has-submenu"><i class="fas fa-circle-dot fa-icon"></i>Macro Recorder
+<div class="submenu">
+<div class="dropdown-item" data-action="macro-record">Record</div>
+<div class="dropdown-item" data-action="macro-stop">Stop</div>
+<div class="dropdown-item" data-action="macro-play">Play</div>
+</div></div>
+</div></div>
+<div class="menu-item" data-menu="help">HELP <i class="fas fa-chevron-down"></i>
+<div class="dropdown">
+<div class="dropdown-item" data-action="view-docs"><i class="fas fa-book fa-icon"></i>View Documentation</div>
+<div class="dropdown-item" data-action="shortcuts"><i class="fas fa-keyboard fa-icon"></i>Keyboard Shortcuts</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="report-bug"><i class="fas fa-bug fa-icon"></i>Report a Bug / Submit Feedback</div>
+<div class="dropdown-item" data-action="check-updates"><i class="fas fa-arrows-rotate fa-icon"></i>Check for Updates</div>
+<div class="dropdown-sep"></div>
+<div class="dropdown-item" data-action="about"><i class="fas fa-circle-info fa-icon"></i>About Notebook v4.5</div>
+</div></div>
+</nav>
+
+<div id="find-replace-panel">
+<label>Find:</label><input type="text" id="fr-find" placeholder="Search..." style="width:140px;">
+<label>Replace:</label><input type="text" id="fr-replace" placeholder="Replace with..." style="width:140px;">
+<button class="fr-btn" data-action="fr-next">Next</button>
+<button class="fr-btn" data-action="fr-prev">Prev</button>
+<button class="fr-btn" data-action="fr-replace-one">Replace</button>
+<button class="fr-btn" data-action="fr-replace-all">Replace All</button>
+<button class="fr-btn" data-action="fr-close" style="background:rgba(200,50,50,0.6)">Close</button>
+</div>
+
+<div id="main-content">
+<aside id="sidebar" role="complementary" aria-label="Sidebar">
+<h4>Navigation</h4>
+<div class="sidebar-item" data-action="new-file"><i class="fas fa-file"></i>New File</div>
+<div class="sidebar-item" data-action="open-file"><i class="fas fa-folder-open"></i>Open File</div>
+<div class="sidebar-item" data-action="save"><i class="fas fa-floppy-disk"></i>Save</div>
+<div class="sidebar-item" data-action="recent-files"><i class="fas fa-clock-rotate-left"></i>Recent Files</div>
+<h4 style="margin-top:12px">Document Outline</h4>
+<div id="sidebar-outline" style="padding:4px 14px;font-size:0.6rem;color:var(--text-muted)">No headings found.</div>
+</aside>
+<section id="editor-panel" role="region" aria-label="Editor">
+<div id="editor-wrapper">
+<div id="line-numbers" aria-hidden="true">1</div>
+<textarea id="editor" spellcheck="true" aria-label="Text editor" placeholder="Start typing..."></textarea>
+<div id="focus-overlay"></div>
+</div>
+</section>
+<div id="divider" role="separator" aria-label="Resize panels"></div>
+<section id="preview-panel" role="region" aria-label="Preview">
+<div id="preview-header"><i class="fas fa-eye"></i> LIVE PREVIEW</div>
+<iframe id="preview" sandbox="allow-same-origin allow-scripts" title="Live preview"></iframe>
+</section>
+</div>
+
+<footer id="status-bar" role="status" aria-label="Status bar">
+<div class="status-item"><i class="fas fa-font"></i><span id="st-chars">0 chars</span></div>
+<div class="status-item"><i class="fas fa-align-left"></i><span id="st-words">0 words</span></div>
+<div class="status-item"><i class="fas fa-list-ol"></i><span id="st-lines">0 lines</span></div>
+<div class="status-item"><i class="fas fa-code"></i><span id="st-mode">Plain Text</span></div>
+<div class="status-item"><i class="fas fa-magnifying-glass"></i><span id="st-zoom">100%</span></div>
+<div class="status-spacer"></div>
+<div class="status-credit">Made by Dylatosh</div>
+</footer>
+</div>
+
+<div id="exit-screen">
+<h1>NOTEBOOK v4.5</h1>
+<p>Editor closed. Thank you for using Notebook.</p>
+<button class="m-btn" onclick="location.reload()">Reopen Editor</button>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+<div class="modal-box" id="modal-box">
+<div class="modal-header"><h3 id="modal-title"></h3><button class="modal-close" id="modal-close-btn" aria-label="Close modal"><i class="fas fa-times"></i></button></div>
+<div class="modal-body" id="modal-body"></div>
+<div class="modal-footer" id="modal-footer"></div>
+</div>
+</div>
+
+<input type="file" id="file-input" style="display:none" accept=".txt,.html,.htm,.md,.css,.js,.json,.xml,.rtf,.csv,.log">
+
+<script>
+/* =====================================================================
+   NOTEBOOK v4.5 — Complete Application Logic
+   Made by Dylatosh
+   ===================================================================== */
+
+// === Application State ===
+const S = {
+    textMode: 'plain', theme: 'dark', zoom: 100, wordWrap: true,
+    lineNumbers: true, statusBar: true, showInvisible: false,
+    focusMode: false, fullscreen: false, distractionFree: false,
+    sidebarOpen: false, lineSpacing: '1.6', currentFile: null,
+    macroRecording: false, macroEvents: [], macroPlaying: false,
+    findIndex: -1, fontSize: '0.78rem',
+    fontFamily: "'JetBrains Mono','Consolas','Monaco',monospace",
+    fontWeight: '400',
+    recentFiles: [],
+    pageSize: 'A4', pageOrientation: 'portrait',
+    pageMargins: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
+};
+
+// === DOM References ===
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const editor = $('#editor');
+const preview = $('#preview');
+const lineNums = $('#line-numbers');
+const findPanel = $('#find-replace-panel');
+const frFind = $('#fr-find');
+const frReplace = $('#fr-replace');
+const modalOverlay = $('#modal-overlay');
+const modalTitle = $('#modal-title');
+const modalBody = $('#modal-body');
+const modalFooter = $('#modal-footer');
+const fileInput = $('#file-input');
+const toastContainer = $('#toast-container');
+const macroIndicator = $('#macro-indicator');
+const focusOverlay = $('#focus-overlay');
+const sidebarEl = $('#sidebar');
+const editorPanel = $('#editor-panel');
+const previewPanel = $('#preview-panel');
+const divider = $('#divider');
+
+// === Splash Screen ===
+window.addEventListener('load', () => {
+    const bar = $('#splash-bar');
+    bar.style.width = '100%';
+    setTimeout(() => {
+        $('#splash').classList.add('hide');
+        setTimeout(() => { const sp = $('#splash'); if(sp) sp.remove(); }, 600);
+        S.recentFiles = JSON.parse(localStorage.getItem('nb_recent') || '[]');
+        loadSavedContent();
+        updateAll();
+    }, 1400);
+});
+
+// === Toast Notifications ===
+function toast(msg, type = 'info') {
+    const t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.textContent = msg;
+    toastContainer.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// === Modal System ===
+function openModal(title, body, footer) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = body;
+    modalFooter.innerHTML = footer || '';
+    modalOverlay.classList.add('show');
+}
+function closeModal() { modalOverlay.classList.remove('show'); }
+ $('#modal-close-btn').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+// === Menu System ===
+let activeMenu = null;
+ $$('.menu-item').forEach(mi => {
+    mi.addEventListener('click', e => {
+        e.stopPropagation();
+        if (activeMenu === mi) { mi.classList.remove('active'); activeMenu = null; }
+        else { if (activeMenu) activeMenu.classList.remove('active'); mi.classList.add('active'); activeMenu = mi; }
+    });
+    mi.addEventListener('mouseenter', () => {
+        if (activeMenu && activeMenu !== mi) { activeMenu.classList.remove('active'); mi.classList.add('active'); activeMenu = mi; }
+    });
+});
+document.addEventListener('click', () => {
+    if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
+    findPanel.classList.remove('show');
+});
+
+// === Action Delegation ===
+document.addEventListener('click', e => {
+    const item = e.target.closest('[data-action]');
+    if (!item) return;
+    e.stopPropagation();
+    const action = item.dataset.action;
+    if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
+    handleAction(action, item);
+});
+
+// === Master Action Router ===
+function handleAction(a, el) {
+    switch(a) {
+        // FILE
+        case 'new-file': actionNewFile(); break;
+        case 'open-file': fileInput.click(); break;
+        case 'save': actionSave(); break;
+        case 'save-as': actionSaveAs(); break;
+        case 'download-txt': dlFile('txt','text/plain'); break;
+        case 'download-rtf': dlRTF(); break;
+        case 'download-md': dlFile('md','text/markdown'); break;
+        case 'download-html': dlFile('html','text/html'); break;
+        case 'download-pdf': dlPDF(); break;
+        case 'download-xml': dlFile('xml','application/xml'); break;
+        case 'download-json': dlFile('json','application/json'); break;
+        case 'page-setup': showPageSetup(); break;
+        case 'print': window.print(); break;
+        case 'share-email': actionShare(); break;
+        case 'file-properties': showFileProps(); break;
+        case 'recent-files': showRecent(); break;
+        case 'close-file': actionCloseFile(); break;
+        case 'exit-editor': actionExit(); break;
+        // EDIT
+        case 'undo': editor.focus(); document.execCommand('undo'); break;
+        case 'redo': editor.focus(); document.execCommand('redo'); break;
+        case 'cut': document.execCommand('cut'); break;
+        case 'copy': document.execCommand('copy'); break;
+        case 'paste': document.execCommand('paste'); break;
+        case 'paste-plain': pastePlain(); break;
+        case 'delete-sel': delSel(); break;
+        case 'select-all': editor.select(); break;
+        case 'find-replace': findPanel.classList.toggle('show'); if(findPanel.classList.contains('show')) frFind.focus(); break;
+        case 'fr-next': findNext(); break;
+        case 'fr-prev': findPrev(); break;
+        case 'fr-replace-one': replaceOne(); break;
+        case 'fr-replace-all': replaceAll(); break;
+        case 'fr-close': findPanel.classList.remove('show'); break;
+        case 'clear-all': if(editor.value){editor.value='';updateAll();toast('Text cleared');} break;
+        case 'dup-line': dupLine(); break;
+        case 'move-up': moveLine(-1); break;
+        case 'move-down': moveLine(1); break;
+        // FORMAT
+        case 'mode-plain': setMode('plain',el); break;
+        case 'mode-html': setMode('html',el); break;
+        case 'mode-markdown': setMode('markdown',el); break;
+        case 'font-picker': showFontPicker(); break;
+        case 'style-bold': wrapSel('<b>','</b>'); break;
+        case 'style-italic': wrapSel('<i>','</i>'); break;
+        case 'style-underline': wrapSel('<u>','</u>'); break;
+        case 'style-strike': wrapSel('<del>','</del>'); break;
+        case 'style-sup': wrapSel('<sup>','</sup>'); break;
+        case 'style-sub': wrapSel('<sub>','</sub>'); break;
+        case 'case-upper': xformSel('upper'); break;
+        case 'case-lower': xformSel('lower'); break;
+        case 'case-title': xformSel('title'); break;
+        case 'case-sentence': xformSel('sentence'); break;
+        case 'align-left': insAt('\n<div style="text-align:left;">\n</div>\n'); toast('Left alignment tag inserted'); break;
+        case 'align-center': insAt('\n<div style="text-align:center;">\n</div>\n'); toast('Center alignment tag inserted'); break;
+        case 'align-right': insAt('\n<div style="text-align:right;">\n</div>\n'); toast('Right alignment tag inserted'); break;
+        case 'align-justify': insAt('\n<div style="text-align:justify;">\n</div>\n'); toast('Justify tag inserted'); break;
+        case 'ls-single': setLS('1.6',el); break;
+        case 'ls-1-5': setLS('2.4',el); break;
+        case 'ls-double': setLS('3.2',el); break;
+        case 'wrap-on': setWrap(true,el); break;
+        case 'wrap-off': setWrap(false,el); break;
+        // INSERT
+        case 'ins-char': insAt(el.dataset.char); break;
+        case 'insert-datetime': insAt(new Date().toLocaleString()); toast('Date/time inserted','success'); break;
+        case 'insert-hyperlink': showInsLink(); break;
+        case 'insert-image': showInsImg(); break;
+        case 'insert-table': showInsTable(); break;
+        case 'insert-hr': insAt(S.textMode==='markdown'?'\n---\n':'\n<hr>\n'); break;
+        case 'insert-pagebreak': insAt('\n<!-- pagebreak -->\n'); toast('Page break inserted'); break;
+        case 'insert-codeblock': insAt(S.textMode==='markdown'?'\n```\n\n```\n':'\n<pre><code>\n\n</code></pre>\n'); break;
+        // VIEW
+        case 'zoom-in': setZoom(S.zoom+10); break;
+        case 'zoom-out': setZoom(S.zoom-10); break;
+        case 'zoom-actual': setZoom(100); break;
+        case 'zoom-reset': setZoom(100); break;
+        case 'fullscreen': toggleFS(); break;
+        case 'distraction-free': toggleDF(); break;
+        case 'focus-mode': toggleFocus(); break;
+        case 'split-50': setSplit(50,el); break;
+        case 'split-70': setSplit(70,el); break;
+        case 'split-30': setSplit(30,el); break;
+        case 'split-editor': setSplit(100,el); break;
+        case 'split-preview': setSplit(0,el); break;
+        case 'toggle-sidebar': toggleSidebar(); break;
+        case 'toggle-statusbar': toggleSB(el); break;
+        case 'toggle-linenums': toggleLN(el); break;
+        case 'toggle-invisible': toggleInv(); break;
+        case 'theme-light': setTheme('light',el); break;
+        case 'theme-dark': setTheme('dark',el); break;
+        case 'theme-cyberpunk': setTheme('cyberpunk',el); break;
+        case 'theme-sepia': setTheme('sepia',el); break;
+        // TOOLS
+        case 'word-count': showWordCount(); break;
+        case 'spell-check': editor.spellcheck=!editor.spellcheck; toast('Spell check: '+(editor.spellcheck?'On':'Off')); break;
+        case 'grammar-check': grammarCheck(); break;
+        case 'sort-az': sortLines(true); break;
+        case 'sort-za': sortLines(false); break;
+        case 'remove-dupes': remDupes(); break;
+        case 'trim-whitespace': trimWS(); break;
+        case 'b64-encode': b64(true); break;
+        case 'b64-decode': b64(false); break;
+        case 'url-encode': urlEnc(true); break;
+        case 'url-decode': urlEnc(false); break;
+        case 'html-beautify': htmlBeautify(); break;
+        case 'html-minify': htmlMinify(); break;
+        case 'macro-record': macroRec(); break;
+        case 'macro-stop': macroStop(); break;
+        case 'macro-play': macroPlay(); break;
+        // HELP
+        case 'view-docs': showDocs(); break;
+        case 'shortcuts': showShortcuts(); break;
+        case 'report-bug': showBugReport(); break;
+        case 'check-updates': showUpdates(); break;
+        case 'about': showAbout(); break;
+    }
+}
+
+// ============================================================
+// FILE OPERATIONS
+// ============================================================
+function actionNewFile() {
+    if (editor.value.length > 0) {
+        openModal('New File','<p style="color:var(--text-secondary)">Create a new file? Unsaved changes will be lost.</p>',
+            '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doNew()">New File</button>');
+    } else doNew();
+}
+function doNew(){ closeModal(); editor.value=''; S.currentFile=null; updateAll(); toast('New file created','success'); }
+
+fileInput.addEventListener('change', e => {
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => { editor.value=ev.target.result; S.currentFile=f.name; addRecent(f.name,ev.target.result); updateAll(); toast('Opened: '+f.name,'success'); };
+    r.readAsText(f); fileInput.value='';
+});
+
+function actionSave() {
+    const n = S.currentFile || 'untitled';
+    localStorage.setItem('nb_file_'+n, editor.value);
+    localStorage.setItem('nb_current', n);
+    addRecent(n, editor.value);
+    toast('Saved: '+n, 'success');
+}
+
+function actionSaveAs() {
+    openModal('Save As','<div class="m-group"><label class="m-label">Filename</label><input class="m-input" id="sa-name" value="'+(S.currentFile||'untitled')+'"></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doSaveAs()">Save</button>');
+}
+function doSaveAs(){
+    const n=$('#sa-name').value.trim()||'untitled';
+    localStorage.setItem('nb_file_'+n,editor.value);
+    localStorage.setItem('nb_current',n);
+    S.currentFile=n; addRecent(n,editor.value);
+    closeModal(); updateStatusBar(); toast('Saved as: '+n,'success');
+}
+
+function loadSavedContent() {
+    const cur = localStorage.getItem('nb_current');
+    if (cur) {
+        const c = localStorage.getItem('nb_file_'+cur);
+        if (c !== null) { editor.value=c; S.currentFile=cur; S.textMode='html'; updateModeChecks(); return; }
+    }
+    editor.value = '<!-- Welcome to Notebook v4.5 -->\n<!-- Made by Dylatosh -->\n\n<h1>Hello, World</h1>\n<p>Start typing in the editor on the left, and see the live preview on the right.</p>\n\n<p>Switch between <strong>Plain Text</strong>, <strong>HTML</strong>, and <strong>Markdown</strong> modes from the Format menu.</p>\n\n<ul>\n  <li>Full menu system with nested dropdowns</li>\n  <li>Live split-screen preview via iframe</li>\n  <li>Multiple export formats (TXT, RTF, MD, HTML, PDF, XML, JSON)</li>\n  <li>Four editor themes: Light, Dark, Cyberpunk, Sepia</li>\n  <li>Macro recorder for keystroke playback</li>\n  <li>Base64 and URL encoding/decoding</li>\n  <li>HTML beautifier and minifier</li>\n  <li>Find and replace with wrap-around</li>\n  <li>Document outline sidebar</li>\n  <li>And much more...</li>\n</ul>';
+    S.textMode = 'html';
+    updateModeChecks();
+}
+
+function dlFile(ext, mime) {
+    const b = new Blob([editor.value],{type:mime});
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href=u; a.download=(S.currentFile||'untitled').replace(/\.[^.]+$/,'')+'.'+ext;
+    a.click(); URL.revokeObjectURL(u);
+    toast('Downloaded .'+ext,'success');
+}
+
+function dlRTF() {
+    const t = editor.value.replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/\n/g,'\\line ');
+    const rtf = '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss Helvetica;}}\\f0\\fs24 '+t+'}';
+    const b = new Blob([rtf],{type:'application/rtf'});
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href=u; a.download=(S.currentFile||'untitled').replace(/\.[^.]+$/,'')+'.rtf';
+    a.click(); URL.revokeObjectURL(u);
+    toast('Downloaded .rtf','success');
+}
+
+function dlPDF() {
+    const html = getPreviewHTML();
+    const w = window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>'+(S.currentFile||'Document')+'</title><style>body{font-family:Helvetica,Arial,sans-serif;padding:'+S.pageMargins.top+' '+S.pageMargins.right+' '+S.pageMargins.bottom+' '+S.pageMargins.left+';color:#222;line-height:1.6;}@page{size:'+S.pageSize+' '+S.pageOrientation+';margin:'+S.pageMargins.top+' '+S.pageMargins.right+' '+S.pageMargins.bottom+' '+S.pageMargins.left+';}img{max-width:100%;}pre{background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;}code{font-family:monospace;background:#f0f0f0;padding:2px 4px;border-radius:3px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f0f0f0;}</style></head><body>'+html+'</body></html>');
+    w.document.close();
+    setTimeout(()=>w.print(),500);
+    toast('PDF print dialog opened');
+}
+
+function actionShare() {
+    const subj = encodeURIComponent('Shared from Notebook v4.5: '+(S.currentFile||'untitled'));
+    const body = encodeURIComponent(editor.value);
+    window.open('mailto:?subject='+subj+'&body='+body);
+    toast('Email client opened');
+}
+
+function showFileProps() {
+    const t=editor.value, c=t.length, w=t.trim()?t.trim().split(/\s+/).length:0, l=t.split('\n').length;
+    const b=new Blob([t]).size, kb=(b/1024).toFixed(2);
+    const ext=S.currentFile?S.currentFile.split('.').pop().toUpperCase():'NONE';
+    openModal('File Properties',
+        '<div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;">'+
+        '<span style="color:var(--text-muted)">Filename:</span><span>'+(S.currentFile||'Untitled')+'</span>'+
+        '<span style="color:var(--text-muted)">File Type:</span><span>.'+ext+'</span>'+
+        '<span style="color:var(--text-muted)">Size:</span><span>'+b+' bytes ('+kb+' KB)</span>'+
+        '<span style="color:var(--text-muted)">Characters:</span><span>'+c.toLocaleString()+'</span>'+
+        '<span style="color:var(--text-muted)">Words:</span><span>'+w.toLocaleString()+'</span>'+
+        '<span style="color:var(--text-muted)">Lines:</span><span>'+l.toLocaleString()+'</span>'+
+        '<span style="color:var(--text-muted)">Text Mode:</span><span>'+S.textMode.charAt(0).toUpperCase()+S.textMode.slice(1)+'</span>'+
+        '<span style="color:var(--text-muted)">Theme:</span><span>'+S.theme.charAt(0).toUpperCase()+S.theme.slice(1)+'</span>'+
+        '<span style="color:var(--text-muted)">Encoding:</span><span>UTF-8</span></div>',
+        '<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+
+function showPageSetup() {
+    openModal('Page Setup',
+        '<div class="m-group"><label class="m-label">Page Size</label><select class="m-select" id="ps-sz"><option value="A4"'+(S.pageSize==='A4'?' selected':'')+'>A4</option><option value="Letter"'+(S.pageSize==='Letter'?' selected':'')+'>Letter</option><option value="Legal"'+(S.pageSize==='Legal'?' selected':'')+'>Legal</option></select></div>'+
+        '<div class="m-group"><label class="m-label">Orientation</label><select class="m-select" id="ps-or"><option value="portrait"'+(S.pageOrientation==='portrait'?' selected':'')+'>Portrait</option><option value="landscape"'+(S.pageOrientation==='landscape'?' selected':'')+'>Landscape</option></select></div>'+
+        '<div class="m-row"><div class="m-group"><label class="m-label">Top</label><input class="m-input" id="ps-mt" value="'+S.pageMargins.top+'"></div><div class="m-group"><label class="m-label">Right</label><input class="m-input" id="ps-mr" value="'+S.pageMargins.right+'"></div></div>'+
+        '<div class="m-row"><div class="m-group"><label class="m-label">Bottom</label><input class="m-input" id="ps-mb" value="'+S.pageMargins.bottom+'"></div><div class="m-group"><label class="m-label">Left</label><input class="m-input" id="ps-ml" value="'+S.pageMargins.left+'"></div></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="applyPS()">Apply</button>');
+}
+function applyPS(){
+    S.pageSize=$('#ps-sz').value; S.pageOrientation=$('#ps-or').value;
+    S.pageMargins.top=$('#ps-mt').value; S.pageMargins.right=$('#ps-mr').value;
+    S.pageMargins.bottom=$('#ps-mb').value; S.pageMargins.left=$('#ps-ml').value;
+    closeModal(); toast('Page setup updated','success');
+}
+
+function actionCloseFile() {
+    if(editor.value.length>0){
+        openModal('Close File','<p style="color:var(--text-secondary)">Close current file? Ensure you have saved.</p>',
+            '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="closeModal();editor.value=\'\';S.currentFile=null;updateAll();toast(\'File closed\')">Close</button>');
+    } else { editor.value=''; S.currentFile=null; updateAll(); toast('File closed'); }
+}
+
+function actionExit() {
+    openModal('Exit Editor','<p style="color:var(--text-secondary)">Are you sure you want to exit?</p>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="closeModal();$(\'#app\').style.display=\'none\';$(\'#exit-screen\').classList.add(\'show\')">Exit</button>');
+}
+
+// Recent Files
+function addRecent(name, content) {
+    let f = JSON.parse(localStorage.getItem('nb_recent')||'[]');
+    f = f.filter(x=>x.name!==name);
+    f.unshift({name,time:Date.now()});
+    if(f.length>15) f=f.slice(0,15);
+    localStorage.setItem('nb_recent',JSON.stringify(f));
+    localStorage.setItem('nb_file_'+name,content);
+    S.recentFiles=f;
+}
+function showRecent() {
+    const f=JSON.parse(localStorage.getItem('nb_recent')||'[]');
+    if(!f.length){ openModal('Recent Files','<p style="color:var(--text-muted);text-align:center;padding:20px">No recent files found.</p>','<button class="m-btn" onclick="closeModal()">Close</button>'); return; }
+    let h='<div style="max-height:300px;overflow-y:auto">';
+    f.forEach(x=>{
+        const d=new Date(x.time).toLocaleDateString()+' '+new Date(x.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const safe=x.name.replace(/'/g,"\\'");
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background 0.15s;margin-bottom:2px" onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseout="this.style.background=\'transparent\'" onclick="openRF(\''+safe+'\')"><div><i class="fas fa-file" style="opacity:0.4;margin-right:8px;font-size:0.6rem"></i>'+x.name+'</div><div style="font-size:0.55rem;color:var(--text-muted)">'+d+'</div></div>';
+    });
+    h+='</div>';
+    openModal('Recent Files',h,'<button class="m-btn m-btn-secondary" onclick="clearRF()" style="margin-right:auto;color:#e55">Clear All</button><button class="m-btn" onclick="closeModal()">Close</button>');
+}
+function openRF(n){ const c=localStorage.getItem('nb_file_'+n); if(c!==null){editor.value=c;S.currentFile=n;updateAll();closeModal();toast('Opened: '+n,'success');}else toast('File not found','error'); }
+function clearRF(){ S.recentFiles.forEach(f=>localStorage.removeItem('nb_file_'+f.name)); localStorage.removeItem('nb_recent'); S.recentFiles=[]; closeModal(); toast('Recent files cleared'); }
+
+// ============================================================
+// EDIT OPERATIONS
+// ============================================================
+function pastePlain() {
+    navigator.clipboard.readText().then(t=>{
+        const s=editor.selectionStart,e=editor.selectionEnd;
+        editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
+        editor.selectionStart=editor.selectionEnd=s+t.length; updateAll(); toast('Pasted plain text');
+    }).catch(()=>toast('Cannot access clipboard','error'));
+}
+function delSel(){ const s=editor.selectionStart,e=editor.selectionEnd; if(s!==e){editor.value=editor.value.substring(0,s)+editor.value.substring(e);editor.selectionStart=editor.selectionEnd=s;updateAll();} }
+
+// Find & Replace
+function escRx(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function findNext(){
+    const t=frFind.value; if(!t) return;
+    const idx=editor.value.indexOf(t,S.findIndex+1);
+    if(idx!==-1){S.findIndex=idx;editor.focus();editor.setSelectionRange(idx,idx+t.length);scrollSel();}
+    else{const w=editor.value.indexOf(t);if(w!==-1){S.findIndex=w;editor.focus();editor.setSelectionRange(w,w+t.length);scrollSel();toast('Wrapped to beginning');}else toast('No matches found','warning');}
+}
+function findPrev(){
+    const t=frFind.value; if(!t) return;
+    let sf=S.findIndex-1; if(sf<0) sf=editor.value.length-1;
+    const idx=editor.value.lastIndexOf(t,sf);
+    if(idx!==-1){S.findIndex=idx;editor.focus();editor.setSelectionRange(idx,idx+t.length);scrollSel();}
+    else toast('No matches found','warning');
+}
+function replaceOne(){
+    const t=frFind.value,r=frReplace.value; if(!t) return;
+    const s=editor.selectionStart,e=editor.selectionEnd;
+    if(editor.value.substring(s,e)===t){
+        editor.value=editor.value.substring(0,s)+r+editor.value.substring(e);
+        editor.selectionStart=s;editor.selectionEnd=s+r.length;S.findIndex=s+r.length;updateAll();findNext();
+    } else findNext();
+}
+function replaceAll(){
+    const t=frFind.value,r=frReplace.value; if(!t) return;
+    const c=(editor.value.match(new RegExp(escRx(t),'g'))||[]).length;
+    editor.value=editor.value.split(t).join(r);updateAll();toast('Replaced '+c+' occurrence(s)','success');
+}
+function scrollSel(){
+    const p=editor.selectionStart,lines=editor.value.substring(0,p).split('\n').length;
+    const lh=parseFloat(getComputedStyle(editor).lineHeight);
+    editor.scrollTop=Math.max(0,(lines-3)*lh);
+}
+
+// Line Operations
+function getLineInfo(){
+    const p=editor.selectionStart,t=editor.value.substring(0,p);
+    const ls=t.lastIndexOf('\n')+1, le=editor.value.indexOf('\n',p);
+    return {pos:p,ls,le:le===-1?editor.value.length:le};
+}
+function dupLine(){
+    const{ls,le}=getLineInfo(),line=editor.value.substring(ls,le);
+    editor.value=editor.value.substring(0,ls)+line+'\n'+line+editor.value.substring(le);
+    editor.selectionStart=editor.selectionEnd=ls+line.length+1;updateAll();
+}
+function moveLine(dir){
+    const{pos,ls,le}=getLineInfo(),line=editor.value.substring(ls,le);
+    if(dir===-1){
+        if(ls===0) return;
+        const ple=ls-1,pls=editor.value.lastIndexOf('\n',ple-1)+1,prev=editor.value.substring(pls,ple);
+        const np=pos-(prev.length+1);
+        editor.value=editor.value.substring(0,pls)+line+'\n'+prev+editor.value.substring(le);
+        editor.selectionStart=editor.selectionEnd=Math.max(0,np);
+    } else {
+        if(le>=editor.value.length) return;
+        const nle=editor.value.indexOf('\n',le+1),ane=nle===-1?editor.value.length:nle,next=editor.value.substring(le+1,ane);
+        const np=pos+next.length+1;
+        editor.value=editor.value.substring(0,ls)+next+'\n'+line+editor.value.substring(ane);
+        editor.selectionStart=editor.selectionEnd=np;
+    }
+    updateAll();
+}
+
+// ============================================================
+// FORMAT OPERATIONS
+// ============================================================
+function setMode(m,el){
+    S.textMode=m; updateModeChecks(); updatePreview(); updateStatusBar();
+    toast('Mode: '+m.charAt(0).toUpperCase()+m.slice(1));
+}
+function updateModeChecks(){
+    ['mode-plain','mode-html','mode-markdown'].forEach(a=>{
+        const i=$('.dropdown-item[data-action="'+a+'"]');
+        if(i) i.classList.toggle('checked',a==='mode-'+S.textMode);
+    });
+}
+
+function showFontPicker(){
+    const fams=["'JetBrains Mono',monospace","'Courier New',monospace","'Georgia',serif","'Times New Roman',serif","'Verdana',sans-serif","'Trebuchet MS',sans-serif","'Palatino Linotype',serif","'Lucida Console',monospace"];
+    const sizes=['0.65rem','0.72rem','0.78rem','0.85rem','0.95rem','1.05rem','1.2rem'];
+    const wts=['300','400','500','600','700'];
+    let fo=fams.map(f=>'<option value="'+f+'"'+(S.fontFamily===f?' selected':'')+'>'+f.split(',')[0].replace(/'/g,'')+'</option>').join('');
+    let so=sizes.map(s=>'<option value="'+s+'"'+(S.fontSize===s?' selected':'')+'>'+s+'</option>').join('');
+    let wo=wts.map(w=>'<option value="'+w+'"'+(S.fontWeight===w?' selected':'')+'>'+w+'</option>').join('');
+    openModal('Font Settings',
+        '<div class="m-group"><label class="m-label">Font Family</label><select class="m-select" id="fp-fam">'+fo+'</select></div>'+
+        '<div class="m-row"><div class="m-group"><label class="m-label">Size</label><select class="m-select" id="fp-sz">'+so+'</select></div><div class="m-group"><label class="m-label">Weight</label><select class="m-select" id="fp-wt">'+wo+'</select></div></div>'+
+        '<div style="padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;margin-top:4px"><p class="m-label" style="margin-bottom:8px">Preview</p><p id="fp-pv" style="font-family:'+S.fontFamily+';font-size:'+S.fontSize+';font-weight:'+S.fontWeight+';color:var(--text-primary)">The quick brown fox jumps over the lazy dog.</p></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="applyFont()">Apply</button>');
+    setTimeout(()=>{
+        const f=$('#fp-fam'),s=$('#fp-sz'),w=$('#fp-wt'),p=$('#fp-pv');
+        if(f)f.onchange=()=>{if(p)p.style.fontFamily=f.value;};
+        if(s)s.onchange=()=>{if(p)p.style.fontSize=s.value;};
+        if(w)w.onchange=()=>{if(p)p.style.fontWeight=w.value;};
+    },100);
+}
+function applyFont(){
+    S.fontFamily=$('#fp-fam').value;S.fontSize=$('#fp-sz').value;S.fontWeight=$('#fp-wt').value;
+    editor.style.fontFamily=S.fontFamily;editor.style.fontSize=S.fontSize;editor.style.fontWeight=S.fontWeight;
+    lineNums.style.fontSize=S.fontSize;
+    closeModal();toast('Font updated','success');
+}
+
+function wrapSel(open,close){
+    const s=editor.selectionStart,e=editor.selectionEnd,sel=editor.value.substring(s,e);
+    if(!sel){editor.value=editor.value.substring(0,s)+open+close+editor.value.substring(e);editor.selectionStart=editor.selectionEnd=s+open.length;}
+    else{editor.value=editor.value.substring(0,s)+open+sel+close+editor.value.substring(e);editor.selectionStart=s;editor.selectionEnd=s+open.length+sel.length+close.length;}
+    editor.focus();updateAll();
+}
+
+function xformSel(type){
+    let s=editor.selectionStart,e=editor.selectionEnd,t=editor.value.substring(s,e);
+    if(!t){t=editor.value;s=0;e=editor.value.length;editor.selectionStart=0;editor.selectionEnd=e;}
+    switch(type){
+        case'upper':t=t.toUpperCase();break;case'lower':t=t.toLowerCase();break;
+        case'title':t=t.replace(/\w\S*/g,x=>x.charAt(0).toUpperCase()+x.substr(1).toLowerCase());break;
+        case'sentence':t=t.toLowerCase().replace(/(^\s*\w|[.!?]\s+\w)/g,c=>c.toUpperCase());break;
+    }
+    editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
+    editor.selectionStart=s;editor.selectionEnd=s+t.length;editor.focus();updateAll();
+    toast('Applied: '+type+' case');
+}
+
+function setLS(sp,el){
+    S.lineSpacing=sp;editor.style.lineHeight=sp;lineNums.style.lineHeight=sp;updateLineNums();
+    ['ls-single','ls-1-5','ls-double'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    toast('Line spacing updated');
+}
+function setWrap(on,el){
+    S.wordWrap=on;editor.style.whiteSpace=on?'pre-wrap':'pre';editor.style.overflowX=on?'hidden':'auto';
+    ['wrap-on','wrap-off'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    toast('Word wrap: '+(on?'On':'Off'));
+}
+function insAt(t){
+    const s=editor.selectionStart,e=editor.selectionEnd;
+    editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
+    editor.selectionStart=editor.selectionEnd=s+t.length;editor.focus();updateAll();
+}
+
+// ============================================================
+// INSERT OPERATIONS
+// ============================================================
+function showInsLink(){
+    openModal('Insert Hyperlink',
+        '<div class="m-group"><label class="m-label">URL</label><input class="m-input" id="hl-url" placeholder="https://example.com"></div>'+
+        '<div class="m-group"><label class="m-label">Display Text</label><input class="m-input" id="hl-txt" placeholder="Link text"></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsLink()">Insert</button>');
+}
+function doInsLink(){
+    const u=$('#hl-url').value.trim(),t=$('#hl-txt').value.trim()||u;
+    if(!u){toast('Please enter a URL','warning');return;}
+    insAt(S.textMode==='markdown'?'['+t+']('+u+')':'<a href="'+u+'" target="_blank">'+t+'</a>');
+    closeModal();toast('Hyperlink inserted','success');
+}
+function showInsImg(){
+    openModal('Insert Image',
+        '<div class="m-group"><label class="m-label">Image URL</label><input class="m-input" id="im-url" placeholder="https://example.com/image.png"></div>'+
+        '<div class="m-group"><label class="m-label">Alt Text</label><input class="m-input" id="im-alt" placeholder="Description"></div>'+
+        '<div class="m-group"><label class="m-label">Or Upload Local Image</label><input type="file" class="m-input" id="im-file" accept="image/*" style="padding:6px"></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsImg()">Insert</button>');
+    setTimeout(()=>{const fi=$('#im-file');if(fi)fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{$('#im-url').value=ev.target.result;};r.readAsDataURL(f);};},100);
+}
+function doInsImg(){
+    const u=$('#im-url').value.trim(),a=$('#im-alt').value.trim()||'Image';
+    if(!u){toast('Provide URL or upload','warning');return;}
+    insAt(S.textMode==='markdown'?'!['+a+']('+u+')':'<img src="'+u+'" alt="'+a+'" style="max-width:100%">');
+    closeModal();toast('Image inserted','success');
+}
+function showInsTable(){
+    openModal('Insert Table',
+        '<div class="m-row"><div class="m-group"><label class="m-label">Rows</label><input class="m-input" id="tb-r" type="number" min="1" max="50" value="3"></div><div class="m-group"><label class="m-label">Columns</label><input class="m-input" id="tb-c" type="number" min="1" max="20" value="3"></div></div>'+
+        '<div class="m-group"><label class="m-label"><input type="checkbox" id="tb-h" checked> Include Header Row</label></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsTable()">Generate</button>');
+}
+function doInsTable(){
+    const rows=Math.max(1,Math.min(50,parseInt($('#tb-r').value)||3));
+    const cols=Math.max(1,Math.min(20,parseInt($('#tb-c').value)||3));
+    const hdr=$('#tb-h').checked;
+    let t='';
+    if(S.textMode==='markdown'){
+        if(hdr){t+='| '+Array(cols).fill('Header').join(' | ')+' |\n| '+Array(cols).fill('---').join(' | ')+' |\n';for(let r=1;r<rows;r++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
+        else{for(let r=0;r<rows;r++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
+    } else {
+        t+='<table>\n';
+        if(hdr){t+='  <thead>\n    <tr>\n';for(let c=0;c<cols;c++)t+='      <th>Header</th>\n';t+='    </tr>\n  </thead>\n  <tbody>\n';for(let r=1;r<rows;r++){t+='    <tr>\n';for(let c=0;c<cols;c++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
+        else{t+='  <tbody>\n';for(let r=0;r<rows;r++){t+='    <tr>\n';for(let c=0;c<cols;c++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
+        t+='</table>';
+    }
+    insAt('\n'+t+'\n');closeModal();toast('Table inserted','success');
+}
+
+// ============================================================
+// VIEW OPERATIONS
+// ============================================================
+function setZoom(lv){
+    S.zoom=Math.max(50,Math.min(200,lv));
+    editor.style.transform='scale('+(S.zoom/100)+')';
+    editor.style.width=(10000/S.zoom)+'%';
+    lineNums.style.transform='scale('+(S.zoom/100)+')';
+    lineNums.style.width=(4400/S.zoom)+'%';
+    $('#st-zoom').textContent=S.zoom+'%';
+}
+function toggleFS(){
+    if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});$('#app').classList.add('fullscreen');S.fullscreen=true;}
+    else{document.exitFullscreen();$('#app').classList.remove('fullscreen');S.fullscreen=false;}
+}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){$('#app').classList.remove('fullscreen');S.fullscreen=false;}});
+
+function toggleDF(){
+    S.distractionFree=!S.distractionFree;$('#app').classList.toggle('distraction-free',S.distractionFree);
+    toast('Distraction-free: '+(S.distractionFree?'ON':'OFF'));
+}
+function toggleFocus(){
+    S.focusMode=!S.focusMode;focusOverlay.classList.toggle('show',S.focusMode);
+    if(S.focusMode) updateFocusOverlay();
+    toast('Focus mode: '+(S.focusMode?'ON':'OFF'));
+}
+function updateFocusOverlay(){
+    if(!S.focusMode) return;
+    const p=editor.selectionStart,li=editor.value.substring(0,p).split('\n').length-1;
+    const lh=parseFloat(getComputedStyle(editor).lineHeight)*(S.zoom/100);
+    const top=li*lh-editor.scrollTop,pad=lh*2.5;
+    focusOverlay.style.background='linear-gradient(to bottom,rgba(0,0,0,0.6) '+Math.max(0,top-pad)+'px,transparent '+top+'px,transparent '+(top+lh)+'px,rgba(0,0,0,0.6) '+(top+lh+pad)+'px)';
+}
+function setSplit(ep,el){
+    ep=Math.max(0,Math.min(100,ep));
+    editorPanel.style.display='flex';previewPanel.style.display='flex';divider.style.display='block';
+    editorPanel.style.flex='';previewPanel.style.flex='';editorPanel.style.width='';previewPanel.style.width='';
+    if(ep===100){previewPanel.style.display='none';divider.style.display='none';editorPanel.style.flex='1';}
+    else if(ep===0){editorPanel.style.display='none';divider.style.display='none';previewPanel.style.flex='1';}
+    else{editorPanel.style.flex='none';previewPanel.style.flex='none';editorPanel.style.width=ep+'%';previewPanel.style.width=(100-ep)+'%';}
+    ['split-50','split-70','split-30','split-editor','split-preview'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+}
+function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;sidebarEl.classList.toggle('open',S.sidebarOpen);updateOutline();}
+function toggleSB(el){S.statusBar=!S.statusBar;$('#status-bar').classList.toggle('hidden',!S.statusBar);if(el)el.classList.toggle('checked',S.statusBar);}
+function toggleLN(el){S.lineNumbers=!S.lineNumbers;lineNums.classList.toggle('hidden',!S.lineNumbers);if(el)el.classList.toggle('checked',S.lineNumbers);}
+function toggleInv(){S.showInvisible=!S.showInvisible;updatePreview();toast('Invisible chars: '+(S.showInvisible?'Visible':'Hidden'));}
+function setTheme(t,el){
+    S.theme=t;document.documentElement.setAttribute('data-theme',t);
+    ['theme-light','theme-dark','theme-cyberpunk','theme-sepia'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    toast('Theme: '+t.charAt(0).toUpperCase()+t.slice(1));
+}
+
+// ============================================================
+// TOOLS
+// ============================================================
+function showWordCount(){
+    const t=editor.value,c=t.length,cns=t.replace(/\s/g,'').length;
+    const w=t.trim()?t.trim().split(/\s+/).length:0;
+    const s=t.trim()?t.split(/[.!?]+/).filter(x=>x.trim()).length:0;
+    const p=t.trim()?t.split(/\n\s*\n/).filter(x=>x.trim()).length:0;
+    const l=t.split('\n').length;
+    const syl=t.toLowerCase().replace(/[^a-z]/g,'').split('').reduce((a,c)=>a+('aeiouy'.includes(c)?1:0),0);
+    const rt=Math.max(1,Math.ceil(w/200)),st=Math.max(1,Math.ceil(w/130));
+    openModal('Word Count & Analytics',
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+        dStatCard(c.toLocaleString(),'Characters')+dStatCard(cns.toLocaleString(),'Chars (no spaces)')+
+        dStatCard(w.toLocaleString(),'Words')+dStatCard(s,'Sentences')+
+        dStatCard(p,'Paragraphs')+dStatCard(l,'Lines')+
+        dStatCard(syl,'Syllables (est.)')+dStatCard(rt+' min','Reading Time')+
+        '</div><div style="margin-top:10px;text-align:center;font-size:0.58rem;color:var(--text-muted)">Speaking time: ~'+st+' min | Avg word length: '+(w?(cns/w).toFixed(1):0)+' chars</div>',
+        '<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+function dStatCard(v,l){return '<div style="background:rgba(255,255,255,0.04);padding:14px;border-radius:8px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--primary-bg)">'+v+'</div><div style="font-size:0.58rem;color:var(--text-muted);margin-top:4px">'+l+'</div></div>';}
+
+function grammarCheck(){
+    const t=editor.value,issues=[];
+    const ds=(t.match(/  +/g)||[]).length; if(ds>0) issues.push(ds+' instance(s) of double spaces');
+    if(t.trim().length>20&&!/[.!?]$/.test(t.trim())) issues.push('Document may be missing ending punctuation');
+    const rep=t.match(/\b(\w+)\s+\1\b/gi); if(rep) issues.push(rep.length+' repeated word(s): '+rep.slice(0,3).join(', ')+(rep.length>3?'...':''));
+    const long=t.split(/[.!?]+/).filter(x=>x.trim().split(/\s+/).length>30); if(long.length) issues.push(long.length+' very long sentence(s) (>30 words)');
+    if(t.includes('\t')) issues.push('Document contains tab characters');
+    if(!issues.length){openModal('Grammar Check','<p style="color:#4a4;padding:20px;text-align:center;font-size:1rem"><i class="fas fa-check-circle" style="margin-right:8px"></i>No grammar issues detected!</p>','<button class="m-btn" onclick="closeModal()">Close</button>');return;}
+    openModal('Grammar Check',issues.map(i=>'<div style="padding:8px 10px;background:rgba(255,200,50,0.08);border-left:3px solid #c8960a;border-radius:0 6px 6px 0;margin-bottom:6px;font-size:0.65rem;color:var(--text-secondary)"><i class="fas fa-exclamation-triangle" style="color:#c8960a;margin-right:6px"></i>'+i+'</div>').join(''),'<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+
+function sortLines(az){const l=editor.value.split('\n');l.sort((a,b)=>az?a.localeCompare(b):b.localeCompare(a));editor.value=l.join('\n');updateAll();toast('Sorted '+(az?'A-Z':'Z-A'),'success');}
+function remDupes(){const l=editor.value.split('\n'),u=[...new Set(l)],r=l.length-u.length;editor.value=u.join('\n');updateAll();toast('Removed '+r+' duplicate line(s)','success');}
+function trimWS(){const l=editor.value.split('\n');let c=0;editor.value=l.map(x=>{const t=x.replace(/\s+$/,'');if(t!==x)c++;return t;}).join('\n');updateAll();toast('Trimmed '+c+' line(s)','success');}
+
+function b64(enc){try{editor.value=enc?btoa(unescape(encodeURIComponent(editor.value))):decodeURIComponent(escape(atob(editor.value.trim())));updateAll();toast('Base64 '+(enc?'encoded':'decoded'),'success');}catch(e){toast('Base64 failed: '+e.message,'error');}}
+function urlEnc(enc){try{editor.value=enc?encodeURIComponent(editor.value):decodeURIComponent(editor.value.trim());updateAll();toast('URL '+(enc?'encoded':'decoded'),'success');}catch(e){toast('URL failed: '+e.message,'error');}}
+
+function htmlBeautify(){
+    let h=editor.value.replace(/>\s+</g,'><');let f='',ind=0;const tb='  ';
+    h.split(/(<[^>]+>)/g).filter(x=>x).forEach(tk=>{
+        if(tk.match(/^<\/\w/)){ind=Math.max(0,ind-1);f+=tb.repeat(ind)+tk+'\n';}
+        else if(tk.match(/^<\w[^>]*[^/]>$/)&&!tk.match(/^<(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)/i)){f+=tb.repeat(ind)+tk+'\n';ind++;}
+        else f+=tb.repeat(ind)+tk+'\n';
+    });
+    editor.value=f.trim();updateAll();toast('HTML beautified','success');
+}
+function htmlMinify(){editor.value=editor.value.replace(/\s+/g,' ').replace(/>\s+</g,'><').replace(/\s*\/>/g,'/>').trim();updateAll();toast('HTML minified','success');}
+
+// Macro
+function macroRec(){S.macroRecording=true;S.macroEvents=[];macroIndicator.classList.add('show');toast('Macro recording started','warning');}
+function macroStop(){if(!S.macroRecording)return;S.macroRecording=false;macroIndicator.classList.remove('show');toast('Macro recorded ('+S.macroEvents.length+' events)','success');}
+function macroPlay(){
+    if(!S.macroEvents.length){toast('No macro recorded','warning');return;}
+    if(S.macroPlaying) return;S.macroPlaying=true;
+    editor.focus();
+    let bt=0;
+    S.macroEvents.forEach((ev,i)=>{
+        const d=ev.t-bt;bt=ev.t;
+        setTimeout(()=>{
+            const ei={key:ev.key,code:ev.code,keyCode:ev.keyCode,shiftKey:ev.shift,ctrlKey:ev.ctrl,altKey:ev.alt,bubbles:true};
+            editor.dispatchEvent(new KeyboardEvent('keydown',ei));
+            if(ev.key.length===1&&!ev.ctrl&&!ev.alt){
+                document.execCommand('insertText',false,ev.key);
+            } else if(ev.key==='Enter'){document.execCommand('insertText',false,'\n');}
+            else if(ev.key==='Backspace'){document.execCommand('delete');}
+            else if(ev.key==='Tab'){document.execCommand('insertText',false,'    ');}
+            editor.dispatchEvent(new KeyboardEvent('keyup',ei));
+            if(i===S.macroEvents.length-1){S.macroPlaying=false;updateAll();}
+        },d);
+    });
+}
+
+// ============================================================
+// HELP MODALS
+// ============================================================
+function showDocs(){
+    openModal('Documentation','<div style="line-height:2">'+
+        '<h4 style="color:var(--primary-bg);margin-bottom:8px">Getting Started</h4>'+
+        '<p>Notebook v4.5 is a powerful text editor with live preview. Type in the left panel and see results instantly on the right.</p>'+
+        '<h4 style="color:var(--primary-bg);margin:12px 0 8px">Text Modes</h4>'+
+        '<p><strong>Plain Text:</strong> Displays raw text as-is in the preview.<br><strong>HTML:</strong> Renders HTML markup live in the preview iframe.<br><strong>Markdown:</strong> Converts Markdown syntax to HTML for preview.</p>'+
+        '<h4 style="color:var(--primary-bg);margin:12px 0 8px">Saving & Export</h4>'+
+        '<p>Use File > Save to store in browser memory. File > Download As exports to various formats. PDF export opens a print dialog.</p>'+
+        '<h4 style="color:var(--primary-bg);margin:12px 0 8px">Editor Themes</h4>'+
+        '<p>Switch between Light, Dark, Cyberpunk, and Sepia themes from View > Editor Theme.</p>'+
+        '<h4 style="color:var(--primary-bg);margin:12px 0 8px">Macro Recorder</h4>'+
+        '<p>Go to Tools > Macro Recorder > Record to start capturing keystrokes. Stop to finish, then Play to replay them.</p>'+
+        '<h4 style="color:var(--primary-bg);margin:12px 0 8px">Split Screen</h4>'+
+        '<p>Drag the center divider to resize panels, or use View > Split Screen Layout for presets.</p>'+
+        '</div>','<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+function showShortcuts(){
+    const sc=[
+        ['Ctrl+N','New File'],['Ctrl+O','Open File'],['Ctrl+S','Save'],['Ctrl+Shift+S','Save As'],
+        ['Ctrl+Z','Undo'],['Ctrl+Y','Redo'],['Ctrl+X','Cut'],['Ctrl+C','Copy'],['Ctrl+V','Paste'],
+        ['Ctrl+H','Find & Replace'],['Ctrl+A','Select All'],['Ctrl+D','Duplicate Line'],
+        ['Alt+Up','Move Line Up'],['Alt+Down','Move Line Down'],['Ctrl+B','Bold Wrap'],
+        ['Ctrl+I','Italic Wrap'],['Ctrl+U','Underline Wrap'],['Ctrl+=','Zoom In'],
+        ['Ctrl+-','Zoom Out'],['Ctrl+0','Actual Size'],['F11','Full Screen'],['Escape','Close Menus']
+    ];
+    let h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px">';
+    sc.forEach(([k,d])=>{h+='<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;font-size:0.63rem"><span style="color:var(--text-secondary)">'+d+'</span><span style="color:var(--primary-bg);font-family:var(--font-mono);font-size:0.58rem">'+k+'</span></div>';});
+    h+='</div>';
+    openModal('Keyboard Shortcuts',h,'<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+function showBugReport(){
+    openModal('Report a Bug','<div class="m-group"><label class="m-label">Describe the issue</label><textarea class="m-textarea" id="bug-desc" rows="4" placeholder="What went wrong?"></textarea></div>'+
+        '<div class="m-group"><label class="m-label">Your email (optional)</label><input class="m-input" id="bug-email" placeholder="email@example.com"></div>',
+        '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="submitBug()">Submit</button>');
+}
+function submitBug(){
+    const d=$('#bug-desc').value.trim();
+    if(!d){toast('Please describe the issue','warning');return;}
+    const e=$('#bug-email').value.trim();
+    const body=encodeURIComponent('Bug Report - Notebook v4.5\n\n'+d+'\n\nEmail: '+(e||'Not provided'));
+    window.open('mailto:dylatosh@notebook.dev?subject='+encodeURIComponent('Bug Report - Notebook v4.5')+'&body='+body);
+    closeModal();toast('Opening email client','success');
+}
+function showUpdates(){
+    openModal('Check for Updates','<div style="text-align:center;padding:30px 0"><i class="fas fa-arrows-rotate" style="font-size:2rem;color:var(--primary-bg);margin-bottom:16px;display:block"></i><p style="font-size:0.9rem;font-weight:600;margin-bottom:8px">You are up to date</p><p style="color:var(--text-muted)">Notebook v4.5 is the latest version available.</p><p style="color:var(--text-muted);margin-top:4px;font-size:0.6rem">Build 2025.06 | Made by Dylatosh</p></div>','<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+function showAbout(){
+    openModal('About Notebook v4.5',
+        '<div style="text-align:center;padding:10px 0">'+
+        '<div style="font-family:var(--font-primary);font-size:1.5rem;font-weight:800;letter-spacing:3px;margin-bottom:4px">NOTEBOOK v4.5</div>'+
+        '<div style="color:var(--primary-bg);font-size:0.7rem;letter-spacing:1px;margin-bottom:16px">Made by Dylatosh</div>'+
+        '<div style="text-align:left;font-size:0.63rem;line-height:2;color:var(--text-secondary)">'+
+        '<div style="background:rgba(255,255,255,0.04);padding:12px;border-radius:8px;margin-bottom:10px">'+
+        '<strong style="color:var(--text-primary)">Features:</strong><br>'+
+        '- Live split-screen HTML/Markdown preview<br>'+
+        '- 7 menu categories with 60+ actions<br>'+
+        '- 4 editor themes (Light, Dark, Cyberpunk, Sepia)<br>'+
+        '- Export to TXT, RTF, MD, HTML, PDF, XML, JSON<br>'+
+        '- Find & Replace with wrap-around<br>'+
+        '- Macro recorder for keystroke playback<br>'+
+        '- Base64 & URL encode/decode tools<br>'+
+        '- HTML beautifier & minifier<br>'+
+        '- Word count, grammar check, text sorting<br>'+
+        '- Line operations: duplicate, move up/down<br>'+
+        '- Table generator, symbol inserter<br>'+
+        '- Adjustable font, spacing, zoom<br>'+
+        '- Fullscreen, distraction-free, focus modes<br>'+
+        '- Resizable split panels with presets<br>'+
+        '- Document outline sidebar<br>'+
+        '- Recent files with localStorage persistence<br>'+
+        '- Keyboard shortcuts for all major actions'+
+        '</div>'+
+        '<div style="color:var(--text-muted);font-size:0.58rem">Version 4.5 | Build 2025.06<br>Single-file web application | No external dependencies beyond CDN</div>'+
+        '</div></div>','<button class="m-btn" onclick="closeModal()">Close</button>');
+}
+
+// ============================================================
+// MARKDOWN PARSER (lightweight, no external lib)
+// ============================================================
+function parseMD(md) {
+    let html = md;
+    // Code blocks (``` ... ```)
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+        return '<pre><code class="language-' + (lang || 'text') + '">' + escHTML(code.trim()) + '</code></pre>';
+    });
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 5px;border-radius:3px;font-family:monospace;font-size:0.9em">$1</code>');
+    // Headers
+    html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+    html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+    // Horizontal rule
+    html = html.replace(/^(---|\*\*\*|___)\s*$/gm, '<hr>');
+    // Images
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">');
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#2596be">$1</a>');
+    // Bold + Italic
+    html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+    // Bold
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    // Italic
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+    // Strikethrough
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    // Blockquote
+    html = html.replace(/^>\s+(.+)$/gm, '<blockquote style="border-left:3px solid #2596be;padding-left:12px;color:#555;margin:8px 0">$1</blockquote>');
+    // Unordered list
+    html = html.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
+    html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="padding-left:24px;margin:8px 0">$1</ul>');
+    // Ordered list
+    html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+    // Paragraphs (lines not already wrapped in tags)
+    html = html.replace(/^(?!<[hublopdi]|<li|<hr|<pre|<code|<blockquote)(.*\S.*)$/gm, '<p>$1</p>');
+    // Clean up empty paragraphs
+    html = html.replace(/<p>\s*<\/p>/g, '');
+    return html;
+}
+function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ============================================================
+// PREVIEW ENGINE
+// ============================================================
+function getPreviewHTML() {
+    const t = editor.value;
+    if (S.textMode === 'html') return t;
+    if (S.textMode === 'markdown') return parseMD(t);
+    // Plain text: escape and preserve whitespace
+    let escaped = escHTML(t);
+    if (S.showInvisible) {
+        escaped = escaped.replace(/ /g, '&middot;').replace(/\t/g, '&rarr;   ').replace(/\n/g, '<br>\n');
+    } else {
+        escaped = escaped.replace(/\n/g, '<br>\n');
+    }
+    return escaped;
+}
+function updatePreview() {
+    const html = getPreviewHTML();
+    const doc = preview.contentDocument || preview.contentWindow.document;
+    doc.open();
+    if (S.textMode === 'plain') {
+        doc.write('<!DOCTYPE html><html><head><style>body{font-family:Helvetica,Arial,sans-serif;padding:20px;color:#222;line-height:1.6;font-size:14px;white-space:pre-wrap;word-wrap:break-word;}</style></head><body>' + html + '</body></html>');
+    } else if (S.textMode === 'markdown') {
+        doc.write('<!DOCTYPE html><html><head><style>body{font-family:Helvetica,Arial,sans-serif;padding:20px;color:#222;line-height:1.7;font-size:15px;max-width:800px;margin:0 auto}h1,h2,h3,h4,h5,h6{margin:16px 0 8px;color:#111}h1{font-size:2em;border-bottom:2px solid #eee;padding-bottom:8px}h2{font-size:1.5em;border-bottom:1px solid #eee;padding-bottom:6px}p{margin:8px 0}ul,ol{margin:8px 0;padding-left:24px}li{margin:4px 0}blockquote{margin:12px 0}pre{background:#f5f5f5;padding:14px;border-radius:8px;overflow-x:auto;margin:12px 0;font-size:13px}code{font-family:Consolas,monospace}a{color:#2596be}hr{border:none;border-top:1px solid #ddd;margin:20px 0}img{max-width:100%;border-radius:4px}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f5f5f5}</style></head><body>' + html + '</body></html>');
+    } else {
+        doc.write('<!DOCTYPE html><html><head></head><body>' + html + '</body></html>');
+    }
+    doc.close();
+}
+
+// ============================================================
+// LINE NUMBERS
+// ============================================================
+function updateLineNums() {
+    const lines = editor.value.split('\n').length;
+    let nums = '';
+    for (let i = 1; i <= lines; i++) nums += i + '\n';
+    lineNums.textContent = nums;
+}
+
+// Sync scroll
+editor.addEventListener('scroll', () => {
+    lineNums.scrollTop = editor.scrollTop;
+});
+
+// ============================================================
+// STATUS BAR
+// ============================================================
+function updateStatusBar() {
+    const t = editor.value;
+    $('#st-chars').textContent = t.length + ' chars';
+    $('#st-words').textContent = (t.trim() ? t.trim().split(/\s+/).length : 0) + ' words';
+    $('#st-lines').textContent = t.split('\n').length + ' lines';
+    const modeNames = { plain: 'Plain Text', html: 'HTML', markdown: 'Markdown' };
+    $('#st-mode').textContent = modeNames[S.textMode] || 'Plain Text';
+    $('#st-zoom').textContent = S.zoom + '%';
+}
+
+// ============================================================
+// DOCUMENT OUTLINE (Sidebar)
+// ============================================================
+function updateOutline() {
+    if (!S.sidebarOpen) return;
+    const el = $('#sidebar-outline');
+    if (S.textMode === 'html') {
+        const headings = editor.value.match(/<h([1-6])[^>]*>(.*?)<\/h\1>/gi) || [];
+        if (!headings.length) { el.textContent = 'No headings found.'; return; }
+        el.innerHTML = headings.map(h => {
+            const level = parseInt(h.match(/<h([1-6])/)[1]);
+            const text = h.replace(/<[^>]+>/g, '').trim();
+            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + (0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
+        }).join('');
+    } else if (S.textMode === 'markdown') {
+        const headings = editor.value.match(/^#{1,6}\s+.+$/gm) || [];
+        if (!headings.length) { el.textContent = 'No headings found.'; return; }
+        el.innerHTML = headings.map(h => {
+            const level = (h.match(/^#+/) || [''])[0].length;
+            const text = h.replace(/^#+\s+/, '').trim();
+            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + (0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
+        }).join('');
+    } else {
+        el.textContent = 'Outline available in HTML/Markdown mode.';
+    }
+}
+
+// ============================================================
+// MASTER UPDATE
+// ============================================================
+function updateAll() {
+    updateLineNums();
+    updatePreview();
+    updateStatusBar();
+    updateOutline();
+    if (S.focusMode) updateFocusOverlay();
+}
+
+// ============================================================
+// EDITOR EVENT LISTENERS
+// ============================================================
+editor.addEventListener('input', () => {
+    updateAll();
+    // Macro recording
+    if (S.macroRecording) {
+        // Keystrokes are captured in keydown handler below
+    }
+});
+
+editor.addEventListener('keydown', (e) => {
+    // Macro recording
+    if (S.macroRecording && !S.macroPlaying) {
+        S.macroEvents.push({
+            t: Date.now(),
+            key: e.key,
+            code: e.code,
+            keyCode: e.keyCode,
+            shift: e.shiftKey,
+            ctrl: e.ctrlKey,
+            alt: e.altKey
+        });
+    }
+    // Tab key handling
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) {
+            // Unindent
+            const s = editor.selectionStart;
+            const lineStart = editor.value.lastIndexOf('\n', s - 1) + 1;
+            const line = editor.value.substring(lineStart, editor.value.indexOf('\n', s));
+            if (line.startsWith('    ')) {
+                editor.value = editor.value.substring(0, lineStart) + line.substring(4) + editor.value.substring(lineStart + line.length);
+                editor.selectionStart = editor.selectionEnd = Math.max(lineStart, s - 4);
+                updateAll();
+            }
+        } else {
+            document.execCommand('insertText', false, '    ');
+            updateAll();
+        }
+    }
+    // Focus mode overlay update on arrow keys
+    if (S.focusMode && ['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
+        setTimeout(updateFocusOverlay, 10);
+    }
+});
+
+editor.addEventListener('click', () => {
+    if (S.focusMode) setTimeout(updateFocusOverlay, 10);
+});
+
+editor.addEventListener('keyup', () => {
+    if (S.focusMode) updateFocusOverlay();
+});
+
+// ============================================================
+// DIVIDER DRAG
+// ============================================================
+let isDragging = false;
+divider.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    divider.classList.add('dragging');
+    e.preventDefault();
+});
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const mainRect = mainContent.getBoundingClientRect();
+    const sidebarW = S.sidebarOpen ? 220 : 0;
+    const x = e.clientX - mainRect.left - sidebarW;
+    const totalW = mainRect.width - sidebarW;
+    let pct = (x / totalW) * 100;
+    pct = Math.max(10, Math.min(90, pct));
+    // Remove preset checkmarks since we're doing custom
+    editorPanel.style.display = 'flex';
+    previewPanel.style.display = 'flex';
+    divider.style.display = 'block';
+    editorPanel.style.flex = 'none';
+    previewPanel.style.flex = 'none';
+    editorPanel.style.width = pct + '%';
+    previewPanel.style.width = (100 - pct) + '%';
+    ['split-50', 'split-70', 'split-30', 'split-editor', 'split-preview'].forEach(a => {
+        const i = $('.dropdown-item[data-action="' + a + '"]');
+        if (i) i.classList.remove('checked');
+    });
+});
+document.addEventListener('mouseup', () => {
+    if (isDragging) {
+        isDragging = false;
+        divider.classList.remove('dragging');
+    }
+});
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const shift = e.shiftKey;
+
+    if (ctrl && e.key === 'n') { e.preventDefault(); handleAction('new-file'); }
+    else if (ctrl && e.key === 'o') { e.preventDefault(); handleAction('open-file'); }
+    else if (ctrl && !shift && e.key === 's') { e.preventDefault(); handleAction('save'); }
+    else if (ctrl && shift && (e.key === 's' || e.key === 'S')) { e.preventDefault(); handleAction('save-as'); }
+    else if (ctrl && e.key === 'h') { e.preventDefault(); handleAction('find-replace'); }
+    else if (ctrl && e.key === 'p') { e.preventDefault(); handleAction('print'); }
+    else if (ctrl && e.key === 'd') { e.preventDefault(); handleAction('dup-line'); }
+    else if (ctrl && e.key === 'b') { e.preventDefault(); handleAction('style-bold'); }
+    else if (ctrl && e.key === 'i') { e.preventDefault(); handleAction('style-italic'); }
+    else if (ctrl && e.key === 'u') { e.preventDefault(); handleAction('style-underline'); }
+    else if (ctrl && (e.key === '=' || e.key === '+')) { e.preventDefault(); handleAction('zoom-in'); }
+    else if (ctrl && e.key === '-') { e.preventDefault(); handleAction('zoom-out'); }
+    else if (ctrl && e.key === '0') { e.preventDefault(); handleAction('zoom-actual'); }
+    else if (e.key === 'F11') { e.preventDefault(); handleAction('fullscreen'); }
+    else if (e.key === 'Escape') {
+        if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
+        findPanel.classList.remove('show');
+        if (S.focusMode) { S.focusMode = false; focusOverlay.classList.remove('show'); toast('Focus mode OFF'); }
+        if (S.distractionFree) toggleDF();
+        if (modalOverlay.classList.contains('show')) closeModal();
+    }
+    else if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); handleAction('move-up'); }
+    else if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); handleAction('move-down'); }
+});
+
+// ============================================================
+// AUTO-SAVE (every 30 seconds)
+// ============================================================
+setInterval(() => {
+    if (S.currentFile && editor.value) {
+        localStorage.setItem('nb_file_' + S.currentFile, editor.value);
+    }
+}, 30000);
+
+// ============================================================
+// INITIAL SETUP
+// ============================================================
+// Apply saved theme
+const savedTheme = localStorage.getItem('nb_theme');
+if (savedTheme && ['light', 'dark', 'cyberpunk', 'sepia'].includes(savedTheme)) {
+    S.theme = savedTheme;
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    // Update checkmarks
+    ['theme-light', 'theme-dark', 'theme-cyberpunk', 'theme-sepia'].forEach(a => {
+        const i = $('.dropdown-item[data-action="' + a + '"]');
+        if (i) i.classList.toggle('checked', a === 'theme-' + savedTheme);
+    });
+}
+// Save theme on change
+const origSetTheme = setTheme;
+setTheme = function(t, el) {
+    localStorage.setItem('nb_theme', t);
+    origSetTheme(t, el);
+};
+</script>
+</body>
+</html>
