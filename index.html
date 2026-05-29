@@ -363,8 +363,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-primary);background
 </nav>
 
 <div id="find-replace-panel">
-<label>Find:</label><input type="text" id="fr-find" placeholder="Search..." style="width:140px;">
-<label>Replace:</label><input type="text" id="fr-replace" placeholder="Replace with..." style="width:140px;">
+<label>Find:</label><input type="text" id="fr-find" placeholder="Search..." style="width:140px">
+<label>Replace:</label><input type="text" id="fr-replace" placeholder="Replace with..." style="width:140px">
 <button class="fr-btn" data-action="fr-next">Next</button>
 <button class="fr-btn" data-action="fr-prev">Prev</button>
 <button class="fr-btn" data-action="fr-replace-one">Replace</button>
@@ -465,6 +465,7 @@ const sidebarEl = $('#sidebar');
 const editorPanel = $('#editor-panel');
 const previewPanel = $('#preview-panel');
 const divider = $('#divider');
+const mainContent = $('#main-content');
 
 // === Splash Screen ===
 window.addEventListener('load', () => {
@@ -480,7 +481,8 @@ window.addEventListener('load', () => {
 });
 
 // === Toast Notifications ===
-function toast(msg, type = 'info') {
+function toast(msg, type) {
+    type = type || 'info';
     const t = document.createElement('div');
     t.className = 'toast toast-' + type;
     t.textContent = msg;
@@ -498,33 +500,61 @@ function openModal(title, body, footer) {
 }
 function closeModal() { modalOverlay.classList.remove('show'); }
  $('#modal-close-btn').addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) closeModal(); });
 
 // === Menu System ===
+// FIX: The menu-item click handler must intercept data-action clicks BEFORE
+// calling stopPropagation, otherwise the action event never reaches the
+// document-level handler and no buttons work.
 let activeMenu = null;
- $$('.menu-item').forEach(mi => {
-    mi.addEventListener('click', e => {
+ $$('.menu-item').forEach(function(mi) {
+    mi.addEventListener('click', function(e) {
+        // CRITICAL FIX: Check if the click landed on an actionable item first
+        var actionItem = e.target.closest('[data-action]');
+        if (actionItem && !actionItem.classList.contains('has-submenu')) {
+            e.stopPropagation();
+            // Close menu
+            if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
+            // Execute the action
+            handleAction(actionItem.dataset.action, actionItem);
+            return;
+        }
+        // Otherwise, toggle this menu open/closed
         e.stopPropagation();
-        if (activeMenu === mi) { mi.classList.remove('active'); activeMenu = null; }
-        else { if (activeMenu) activeMenu.classList.remove('active'); mi.classList.add('active'); activeMenu = mi; }
+        if (activeMenu === mi) {
+            mi.classList.remove('active');
+            activeMenu = null;
+        } else {
+            if (activeMenu) activeMenu.classList.remove('active');
+            mi.classList.add('active');
+            activeMenu = mi;
+        }
     });
-    mi.addEventListener('mouseenter', () => {
-        if (activeMenu && activeMenu !== mi) { activeMenu.classList.remove('active'); mi.classList.add('active'); activeMenu = mi; }
+    mi.addEventListener('mouseenter', function() {
+        if (activeMenu && activeMenu !== mi) {
+            activeMenu.classList.remove('active');
+            mi.classList.add('active');
+            activeMenu = mi;
+        }
     });
 });
-document.addEventListener('click', () => {
+
+// Close menus when clicking outside
+document.addEventListener('click', function(e) {
+    // If click is inside a menu-item that's already handling it, skip
+    if (e.target.closest('.menu-item')) return;
     if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
     findPanel.classList.remove('show');
 });
 
-// === Action Delegation ===
-document.addEventListener('click', e => {
-    const item = e.target.closest('[data-action]');
+// Handle actions from NON-menu sources (sidebar, find-replace panel, etc.)
+document.addEventListener('click', function(e) {
+    // Skip if inside a .menu-item (those are handled above)
+    if (e.target.closest('.menu-item')) return;
+    var item = e.target.closest('[data-action]');
     if (!item) return;
     e.stopPropagation();
-    const action = item.dataset.action;
-    if (activeMenu) { activeMenu.classList.remove('active'); activeMenu = null; }
-    handleAction(action, item);
+    handleAction(item.dataset.action, item);
 });
 
 // === Master Action Router ===
@@ -583,10 +613,10 @@ function handleAction(a, el) {
         case 'case-lower': xformSel('lower'); break;
         case 'case-title': xformSel('title'); break;
         case 'case-sentence': xformSel('sentence'); break;
-        case 'align-left': insAt('\n<div style="text-align:left;">\n</div>\n'); toast('Left alignment tag inserted'); break;
-        case 'align-center': insAt('\n<div style="text-align:center;">\n</div>\n'); toast('Center alignment tag inserted'); break;
-        case 'align-right': insAt('\n<div style="text-align:right;">\n</div>\n'); toast('Right alignment tag inserted'); break;
-        case 'align-justify': insAt('\n<div style="text-align:justify;">\n</div>\n'); toast('Justify tag inserted'); break;
+        case 'align-left': insAt('\n<div style="text-align:left">\n</div>\n'); toast('Left alignment tag inserted'); break;
+        case 'align-center': insAt('\n<div style="text-align:center">\n</div>\n'); toast('Center alignment tag inserted'); break;
+        case 'align-right': insAt('\n<div style="text-align:right">\n</div>\n'); toast('Right alignment tag inserted'); break;
+        case 'align-justify': insAt('\n<div style="text-align:justify">\n</div>\n'); toast('Justify tag inserted'); break;
         case 'ls-single': setLS('1.6',el); break;
         case 'ls-1-5': setLS('2.4',el); break;
         case 'ls-double': setLS('3.2',el); break;
@@ -659,15 +689,15 @@ function actionNewFile() {
 }
 function doNew(){ closeModal(); editor.value=''; S.currentFile=null; updateAll(); toast('New file created','success'); }
 
-fileInput.addEventListener('change', e => {
-    const f = e.target.files[0]; if(!f) return;
-    const r = new FileReader();
-    r.onload = ev => { editor.value=ev.target.result; S.currentFile=f.name; addRecent(f.name,ev.target.result); updateAll(); toast('Opened: '+f.name,'success'); };
+fileInput.addEventListener('change', function(e) {
+    var f = e.target.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(ev) { editor.value=ev.target.result; S.currentFile=f.name; addRecent(f.name,ev.target.result); updateAll(); toast('Opened: '+f.name,'success'); };
     r.readAsText(f); fileInput.value='';
 });
 
 function actionSave() {
-    const n = S.currentFile || 'untitled';
+    var n = S.currentFile || 'untitled';
     localStorage.setItem('nb_file_'+n, editor.value);
     localStorage.setItem('nb_current', n);
     addRecent(n, editor.value);
@@ -679,7 +709,7 @@ function actionSaveAs() {
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doSaveAs()">Save</button>');
 }
 function doSaveAs(){
-    const n=$('#sa-name').value.trim()||'untitled';
+    var n=$('#sa-name').value.trim()||'untitled';
     localStorage.setItem('nb_file_'+n,editor.value);
     localStorage.setItem('nb_current',n);
     S.currentFile=n; addRecent(n,editor.value);
@@ -687,9 +717,9 @@ function doSaveAs(){
 }
 
 function loadSavedContent() {
-    const cur = localStorage.getItem('nb_current');
+    var cur = localStorage.getItem('nb_current');
     if (cur) {
-        const c = localStorage.getItem('nb_file_'+cur);
+        var c = localStorage.getItem('nb_file_'+cur);
         if (c !== null) { editor.value=c; S.currentFile=cur; S.textMode='html'; updateModeChecks(); return; }
     }
     editor.value = '<!-- Welcome to Notebook v4.5 -->\n<!-- Made by Dylatosh -->\n\n<h1>Hello, World</h1>\n<p>Start typing in the editor on the left, and see the live preview on the right.</p>\n\n<p>Switch between <strong>Plain Text</strong>, <strong>HTML</strong>, and <strong>Markdown</strong> modes from the Format menu.</p>\n\n<ul>\n  <li>Full menu system with nested dropdowns</li>\n  <li>Live split-screen preview via iframe</li>\n  <li>Multiple export formats (TXT, RTF, MD, HTML, PDF, XML, JSON)</li>\n  <li>Four editor themes: Light, Dark, Cyberpunk, Sepia</li>\n  <li>Macro recorder for keystroke playback</li>\n  <li>Base64 and URL encoding/decoding</li>\n  <li>HTML beautifier and minifier</li>\n  <li>Find and replace with wrap-around</li>\n  <li>Document outline sidebar</li>\n  <li>And much more...</li>\n</ul>';
@@ -698,47 +728,47 @@ function loadSavedContent() {
 }
 
 function dlFile(ext, mime) {
-    const b = new Blob([editor.value],{type:mime});
-    const u = URL.createObjectURL(b);
-    const a = document.createElement('a');
+    var b = new Blob([editor.value],{type:mime});
+    var u = URL.createObjectURL(b);
+    var a = document.createElement('a');
     a.href=u; a.download=(S.currentFile||'untitled').replace(/\.[^.]+$/,'')+'.'+ext;
     a.click(); URL.revokeObjectURL(u);
     toast('Downloaded .'+ext,'success');
 }
 
 function dlRTF() {
-    const t = editor.value.replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/\n/g,'\\line ');
-    const rtf = '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss Helvetica;}}\\f0\\fs24 '+t+'}';
-    const b = new Blob([rtf],{type:'application/rtf'});
-    const u = URL.createObjectURL(b);
-    const a = document.createElement('a');
+    var t = editor.value.replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/\n/g,'\\line ');
+    var rtf = '{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fswiss Helvetica;}}\\f0\\fs24 '+t+'}';
+    var b = new Blob([rtf],{type:'application/rtf'});
+    var u = URL.createObjectURL(b);
+    var a = document.createElement('a');
     a.href=u; a.download=(S.currentFile||'untitled').replace(/\.[^.]+$/,'')+'.rtf';
     a.click(); URL.revokeObjectURL(u);
     toast('Downloaded .rtf','success');
 }
 
 function dlPDF() {
-    const html = getPreviewHTML();
-    const w = window.open('','_blank');
+    var html = getPreviewHTML();
+    var w = window.open('','_blank');
     w.document.write('<!DOCTYPE html><html><head><title>'+(S.currentFile||'Document')+'</title><style>body{font-family:Helvetica,Arial,sans-serif;padding:'+S.pageMargins.top+' '+S.pageMargins.right+' '+S.pageMargins.bottom+' '+S.pageMargins.left+';color:#222;line-height:1.6;}@page{size:'+S.pageSize+' '+S.pageOrientation+';margin:'+S.pageMargins.top+' '+S.pageMargins.right+' '+S.pageMargins.bottom+' '+S.pageMargins.left+';}img{max-width:100%;}pre{background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;}code{font-family:monospace;background:#f0f0f0;padding:2px 4px;border-radius:3px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f0f0f0;}</style></head><body>'+html+'</body></html>');
     w.document.close();
-    setTimeout(()=>w.print(),500);
+    setTimeout(function(){w.print();},500);
     toast('PDF print dialog opened');
 }
 
 function actionShare() {
-    const subj = encodeURIComponent('Shared from Notebook v4.5: '+(S.currentFile||'untitled'));
-    const body = encodeURIComponent(editor.value);
+    var subj = encodeURIComponent('Shared from Notebook v4.5: '+(S.currentFile||'untitled'));
+    var body = encodeURIComponent(editor.value);
     window.open('mailto:?subject='+subj+'&body='+body);
     toast('Email client opened');
 }
 
 function showFileProps() {
-    const t=editor.value, c=t.length, w=t.trim()?t.trim().split(/\s+/).length:0, l=t.split('\n').length;
-    const b=new Blob([t]).size, kb=(b/1024).toFixed(2);
-    const ext=S.currentFile?S.currentFile.split('.').pop().toUpperCase():'NONE';
+    var t=editor.value, c=t.length, w=t.trim()?t.trim().split(/\s+/).length:0, l=t.split('\n').length;
+    var b=new Blob([t]).size, kb=(b/1024).toFixed(2);
+    var ext=S.currentFile?S.currentFile.split('.').pop().toUpperCase():'NONE';
     openModal('File Properties',
-        '<div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px;">'+
+        '<div style="display:grid;grid-template-columns:130px 1fr;gap:8px 12px">'+
         '<span style="color:var(--text-muted)">Filename:</span><span>'+(S.currentFile||'Untitled')+'</span>'+
         '<span style="color:var(--text-muted)">File Type:</span><span>.'+ext+'</span>'+
         '<span style="color:var(--text-muted)">Size:</span><span>'+b+' bytes ('+kb+' KB)</span>'+
@@ -780,100 +810,100 @@ function actionExit() {
 
 // Recent Files
 function addRecent(name, content) {
-    let f = JSON.parse(localStorage.getItem('nb_recent')||'[]');
-    f = f.filter(x=>x.name!==name);
-    f.unshift({name,time:Date.now()});
+    var f = JSON.parse(localStorage.getItem('nb_recent')||'[]');
+    f = f.filter(function(x){return x.name!==name;});
+    f.unshift({name:name,time:Date.now()});
     if(f.length>15) f=f.slice(0,15);
     localStorage.setItem('nb_recent',JSON.stringify(f));
     localStorage.setItem('nb_file_'+name,content);
     S.recentFiles=f;
 }
 function showRecent() {
-    const f=JSON.parse(localStorage.getItem('nb_recent')||'[]');
+    var f=JSON.parse(localStorage.getItem('nb_recent')||'[]');
     if(!f.length){ openModal('Recent Files','<p style="color:var(--text-muted);text-align:center;padding:20px">No recent files found.</p>','<button class="m-btn" onclick="closeModal()">Close</button>'); return; }
-    let h='<div style="max-height:300px;overflow-y:auto">';
-    f.forEach(x=>{
-        const d=new Date(x.time).toLocaleDateString()+' '+new Date(x.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-        const safe=x.name.replace(/'/g,"\\'");
+    var h='<div style="max-height:300px;overflow-y:auto">';
+    f.forEach(function(x){
+        var d=new Date(x.time).toLocaleDateString()+' '+new Date(x.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        var safe=x.name.replace(/'/g,"\\'");
         h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background 0.15s;margin-bottom:2px" onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseout="this.style.background=\'transparent\'" onclick="openRF(\''+safe+'\')"><div><i class="fas fa-file" style="opacity:0.4;margin-right:8px;font-size:0.6rem"></i>'+x.name+'</div><div style="font-size:0.55rem;color:var(--text-muted)">'+d+'</div></div>';
     });
     h+='</div>';
     openModal('Recent Files',h,'<button class="m-btn m-btn-secondary" onclick="clearRF()" style="margin-right:auto;color:#e55">Clear All</button><button class="m-btn" onclick="closeModal()">Close</button>');
 }
-function openRF(n){ const c=localStorage.getItem('nb_file_'+n); if(c!==null){editor.value=c;S.currentFile=n;updateAll();closeModal();toast('Opened: '+n,'success');}else toast('File not found','error'); }
-function clearRF(){ S.recentFiles.forEach(f=>localStorage.removeItem('nb_file_'+f.name)); localStorage.removeItem('nb_recent'); S.recentFiles=[]; closeModal(); toast('Recent files cleared'); }
+function openRF(n){ var c=localStorage.getItem('nb_file_'+n); if(c!==null){editor.value=c;S.currentFile=n;updateAll();closeModal();toast('Opened: '+n,'success');}else toast('File not found','error'); }
+function clearRF(){ S.recentFiles.forEach(function(f){localStorage.removeItem('nb_file_'+f.name);}); localStorage.removeItem('nb_recent'); S.recentFiles=[]; closeModal(); toast('Recent files cleared'); }
 
 // ============================================================
 // EDIT OPERATIONS
 // ============================================================
 function pastePlain() {
-    navigator.clipboard.readText().then(t=>{
-        const s=editor.selectionStart,e=editor.selectionEnd;
+    navigator.clipboard.readText().then(function(t){
+        var s=editor.selectionStart,e=editor.selectionEnd;
         editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
         editor.selectionStart=editor.selectionEnd=s+t.length; updateAll(); toast('Pasted plain text');
-    }).catch(()=>toast('Cannot access clipboard','error'));
+    }).catch(function(){toast('Cannot access clipboard','error');});
 }
-function delSel(){ const s=editor.selectionStart,e=editor.selectionEnd; if(s!==e){editor.value=editor.value.substring(0,s)+editor.value.substring(e);editor.selectionStart=editor.selectionEnd=s;updateAll();} }
+function delSel(){ var s=editor.selectionStart,e=editor.selectionEnd; if(s!==e){editor.value=editor.value.substring(0,s)+editor.value.substring(e);editor.selectionStart=editor.selectionEnd=s;updateAll();} }
 
 // Find & Replace
 function escRx(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 function findNext(){
-    const t=frFind.value; if(!t) return;
-    const idx=editor.value.indexOf(t,S.findIndex+1);
+    var t=frFind.value; if(!t) return;
+    var idx=editor.value.indexOf(t,S.findIndex+1);
     if(idx!==-1){S.findIndex=idx;editor.focus();editor.setSelectionRange(idx,idx+t.length);scrollSel();}
-    else{const w=editor.value.indexOf(t);if(w!==-1){S.findIndex=w;editor.focus();editor.setSelectionRange(w,w+t.length);scrollSel();toast('Wrapped to beginning');}else toast('No matches found','warning');}
+    else{var w=editor.value.indexOf(t);if(w!==-1){S.findIndex=w;editor.focus();editor.setSelectionRange(w,w+t.length);scrollSel();toast('Wrapped to beginning');}else toast('No matches found','warning');}
 }
 function findPrev(){
-    const t=frFind.value; if(!t) return;
-    let sf=S.findIndex-1; if(sf<0) sf=editor.value.length-1;
-    const idx=editor.value.lastIndexOf(t,sf);
+    var t=frFind.value; if(!t) return;
+    var sf=S.findIndex-1; if(sf<0) sf=editor.value.length-1;
+    var idx=editor.value.lastIndexOf(t,sf);
     if(idx!==-1){S.findIndex=idx;editor.focus();editor.setSelectionRange(idx,idx+t.length);scrollSel();}
     else toast('No matches found','warning');
 }
 function replaceOne(){
-    const t=frFind.value,r=frReplace.value; if(!t) return;
-    const s=editor.selectionStart,e=editor.selectionEnd;
+    var t=frFind.value,r=frReplace.value; if(!t) return;
+    var s=editor.selectionStart,e=editor.selectionEnd;
     if(editor.value.substring(s,e)===t){
         editor.value=editor.value.substring(0,s)+r+editor.value.substring(e);
         editor.selectionStart=s;editor.selectionEnd=s+r.length;S.findIndex=s+r.length;updateAll();findNext();
     } else findNext();
 }
 function replaceAll(){
-    const t=frFind.value,r=frReplace.value; if(!t) return;
-    const c=(editor.value.match(new RegExp(escRx(t),'g'))||[]).length;
+    var t=frFind.value,r=frReplace.value; if(!t) return;
+    var c=(editor.value.match(new RegExp(escRx(t),'g'))||[]).length;
     editor.value=editor.value.split(t).join(r);updateAll();toast('Replaced '+c+' occurrence(s)','success');
 }
 function scrollSel(){
-    const p=editor.selectionStart,lines=editor.value.substring(0,p).split('\n').length;
-    const lh=parseFloat(getComputedStyle(editor).lineHeight);
+    var p=editor.selectionStart,lines=editor.value.substring(0,p).split('\n').length;
+    var lh=parseFloat(getComputedStyle(editor).lineHeight);
     editor.scrollTop=Math.max(0,(lines-3)*lh);
 }
 
 // Line Operations
 function getLineInfo(){
-    const p=editor.selectionStart,t=editor.value.substring(0,p);
-    const ls=t.lastIndexOf('\n')+1, le=editor.value.indexOf('\n',p);
-    return {pos:p,ls,le:le===-1?editor.value.length:le};
+    var p=editor.selectionStart,t=editor.value.substring(0,p);
+    var ls=t.lastIndexOf('\n')+1, le=editor.value.indexOf('\n',p);
+    return {pos:p,ls:ls,le:le===-1?editor.value.length:le};
 }
 function dupLine(){
-    const{ls,le}=getLineInfo(),line=editor.value.substring(ls,le);
-    editor.value=editor.value.substring(0,ls)+line+'\n'+line+editor.value.substring(le);
-    editor.selectionStart=editor.selectionEnd=ls+line.length+1;updateAll();
+    var info=getLineInfo(),line=editor.value.substring(info.ls,info.le);
+    editor.value=editor.value.substring(0,info.ls)+line+'\n'+line+editor.value.substring(info.le);
+    editor.selectionStart=editor.selectionEnd=info.ls+line.length+1;updateAll();
 }
 function moveLine(dir){
-    const{pos,ls,le}=getLineInfo(),line=editor.value.substring(ls,le);
+    var info=getLineInfo(),line=editor.value.substring(info.ls,info.le);
     if(dir===-1){
-        if(ls===0) return;
-        const ple=ls-1,pls=editor.value.lastIndexOf('\n',ple-1)+1,prev=editor.value.substring(pls,ple);
-        const np=pos-(prev.length+1);
-        editor.value=editor.value.substring(0,pls)+line+'\n'+prev+editor.value.substring(le);
+        if(info.ls===0) return;
+        var ple=info.ls-1,pls=editor.value.lastIndexOf('\n',ple-1)+1,prev=editor.value.substring(pls,ple);
+        var np=info.pos-(prev.length+1);
+        editor.value=editor.value.substring(0,pls)+line+'\n'+prev+editor.value.substring(info.le);
         editor.selectionStart=editor.selectionEnd=Math.max(0,np);
     } else {
-        if(le>=editor.value.length) return;
-        const nle=editor.value.indexOf('\n',le+1),ane=nle===-1?editor.value.length:nle,next=editor.value.substring(le+1,ane);
-        const np=pos+next.length+1;
-        editor.value=editor.value.substring(0,ls)+next+'\n'+line+editor.value.substring(ane);
-        editor.selectionStart=editor.selectionEnd=np;
+        if(info.le>=editor.value.length) return;
+        var nle=editor.value.indexOf('\n',info.le+1),ane=nle===-1?editor.value.length:nle,next=editor.value.substring(info.le+1,ane);
+        var np2=info.pos+next.length+1;
+        editor.value=editor.value.substring(0,info.ls)+next+'\n'+line+editor.value.substring(ane);
+        editor.selectionStart=editor.selectionEnd=np2;
     }
     updateAll();
 }
@@ -886,29 +916,29 @@ function setMode(m,el){
     toast('Mode: '+m.charAt(0).toUpperCase()+m.slice(1));
 }
 function updateModeChecks(){
-    ['mode-plain','mode-html','mode-markdown'].forEach(a=>{
-        const i=$('.dropdown-item[data-action="'+a+'"]');
+    ['mode-plain','mode-html','mode-markdown'].forEach(function(a){
+        var i=$('.dropdown-item[data-action="'+a+'"]');
         if(i) i.classList.toggle('checked',a==='mode-'+S.textMode);
     });
 }
 
 function showFontPicker(){
-    const fams=["'JetBrains Mono',monospace","'Courier New',monospace","'Georgia',serif","'Times New Roman',serif","'Verdana',sans-serif","'Trebuchet MS',sans-serif","'Palatino Linotype',serif","'Lucida Console',monospace"];
-    const sizes=['0.65rem','0.72rem','0.78rem','0.85rem','0.95rem','1.05rem','1.2rem'];
-    const wts=['300','400','500','600','700'];
-    let fo=fams.map(f=>'<option value="'+f+'"'+(S.fontFamily===f?' selected':'')+'>'+f.split(',')[0].replace(/'/g,'')+'</option>').join('');
-    let so=sizes.map(s=>'<option value="'+s+'"'+(S.fontSize===s?' selected':'')+'>'+s+'</option>').join('');
-    let wo=wts.map(w=>'<option value="'+w+'"'+(S.fontWeight===w?' selected':'')+'>'+w+'</option>').join('');
+    var fams=["'JetBrains Mono',monospace","'Courier New',monospace","'Georgia',serif","'Times New Roman',serif","'Verdana',sans-serif","'Trebuchet MS',sans-serif","'Palatino Linotype',serif","'Lucida Console',monospace"];
+    var sizes=['0.65rem','0.72rem','0.78rem','0.85rem','0.95rem','1.05rem','1.2rem'];
+    var wts=['300','400','500','600','700'];
+    var fo=fams.map(function(f){return '<option value="'+f+'"'+(S.fontFamily===f?' selected':'')+'>'+f.split(',')[0].replace(/'/g,'')+'</option>';}).join('');
+    var so=sizes.map(function(s){return '<option value="'+s+'"'+(S.fontSize===s?' selected':'')+'>'+s+'</option>';}).join('');
+    var wo=wts.map(function(w){return '<option value="'+w+'"'+(S.fontWeight===w?' selected':'')+'>'+w+'</option>';}).join('');
     openModal('Font Settings',
         '<div class="m-group"><label class="m-label">Font Family</label><select class="m-select" id="fp-fam">'+fo+'</select></div>'+
         '<div class="m-row"><div class="m-group"><label class="m-label">Size</label><select class="m-select" id="fp-sz">'+so+'</select></div><div class="m-group"><label class="m-label">Weight</label><select class="m-select" id="fp-wt">'+wo+'</select></div></div>'+
         '<div style="padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;margin-top:4px"><p class="m-label" style="margin-bottom:8px">Preview</p><p id="fp-pv" style="font-family:'+S.fontFamily+';font-size:'+S.fontSize+';font-weight:'+S.fontWeight+';color:var(--text-primary)">The quick brown fox jumps over the lazy dog.</p></div>',
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="applyFont()">Apply</button>');
-    setTimeout(()=>{
-        const f=$('#fp-fam'),s=$('#fp-sz'),w=$('#fp-wt'),p=$('#fp-pv');
-        if(f)f.onchange=()=>{if(p)p.style.fontFamily=f.value;};
-        if(s)s.onchange=()=>{if(p)p.style.fontSize=s.value;};
-        if(w)w.onchange=()=>{if(p)p.style.fontWeight=w.value;};
+    setTimeout(function(){
+        var f=$('#fp-fam'),s=$('#fp-sz'),w=$('#fp-wt'),p=$('#fp-pv');
+        if(f) f.onchange=function(){if(p)p.style.fontFamily=f.value;};
+        if(s) s.onchange=function(){if(p)p.style.fontSize=s.value;};
+        if(w) w.onchange=function(){if(p)p.style.fontWeight=w.value;};
     },100);
 }
 function applyFont(){
@@ -919,19 +949,19 @@ function applyFont(){
 }
 
 function wrapSel(open,close){
-    const s=editor.selectionStart,e=editor.selectionEnd,sel=editor.value.substring(s,e);
+    var s=editor.selectionStart,e=editor.selectionEnd,sel=editor.value.substring(s,e);
     if(!sel){editor.value=editor.value.substring(0,s)+open+close+editor.value.substring(e);editor.selectionStart=editor.selectionEnd=s+open.length;}
     else{editor.value=editor.value.substring(0,s)+open+sel+close+editor.value.substring(e);editor.selectionStart=s;editor.selectionEnd=s+open.length+sel.length+close.length;}
     editor.focus();updateAll();
 }
 
 function xformSel(type){
-    let s=editor.selectionStart,e=editor.selectionEnd,t=editor.value.substring(s,e);
+    var s=editor.selectionStart,e=editor.selectionEnd,t=editor.value.substring(s,e);
     if(!t){t=editor.value;s=0;e=editor.value.length;editor.selectionStart=0;editor.selectionEnd=e;}
     switch(type){
         case'upper':t=t.toUpperCase();break;case'lower':t=t.toLowerCase();break;
-        case'title':t=t.replace(/\w\S*/g,x=>x.charAt(0).toUpperCase()+x.substr(1).toLowerCase());break;
-        case'sentence':t=t.toLowerCase().replace(/(^\s*\w|[.!?]\s+\w)/g,c=>c.toUpperCase());break;
+        case'title':t=t.replace(/\w\S*/g,function(x){return x.charAt(0).toUpperCase()+x.substr(1).toLowerCase();});break;
+        case'sentence':t=t.toLowerCase().replace(/(^\s*\w|[.!?]\s+\w)/g,function(c){return c.toUpperCase();});break;
     }
     editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
     editor.selectionStart=s;editor.selectionEnd=s+t.length;editor.focus();updateAll();
@@ -940,16 +970,16 @@ function xformSel(type){
 
 function setLS(sp,el){
     S.lineSpacing=sp;editor.style.lineHeight=sp;lineNums.style.lineHeight=sp;updateLineNums();
-    ['ls-single','ls-1-5','ls-double'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    ['ls-single','ls-1-5','ls-double'].forEach(function(a){var i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
     toast('Line spacing updated');
 }
 function setWrap(on,el){
     S.wordWrap=on;editor.style.whiteSpace=on?'pre-wrap':'pre';editor.style.overflowX=on?'hidden':'auto';
-    ['wrap-on','wrap-off'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    ['wrap-on','wrap-off'].forEach(function(a){var i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
     toast('Word wrap: '+(on?'On':'Off'));
 }
 function insAt(t){
-    const s=editor.selectionStart,e=editor.selectionEnd;
+    var s=editor.selectionStart,e=editor.selectionEnd;
     editor.value=editor.value.substring(0,s)+t+editor.value.substring(e);
     editor.selectionStart=editor.selectionEnd=s+t.length;editor.focus();updateAll();
 }
@@ -964,7 +994,7 @@ function showInsLink(){
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsLink()">Insert</button>');
 }
 function doInsLink(){
-    const u=$('#hl-url').value.trim(),t=$('#hl-txt').value.trim()||u;
+    var u=$('#hl-url').value.trim(),t=$('#hl-txt').value.trim()||u;
     if(!u){toast('Please enter a URL','warning');return;}
     insAt(S.textMode==='markdown'?'['+t+']('+u+')':'<a href="'+u+'" target="_blank">'+t+'</a>');
     closeModal();toast('Hyperlink inserted','success');
@@ -975,10 +1005,10 @@ function showInsImg(){
         '<div class="m-group"><label class="m-label">Alt Text</label><input class="m-input" id="im-alt" placeholder="Description"></div>'+
         '<div class="m-group"><label class="m-label">Or Upload Local Image</label><input type="file" class="m-input" id="im-file" accept="image/*" style="padding:6px"></div>',
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsImg()">Insert</button>');
-    setTimeout(()=>{const fi=$('#im-file');if(fi)fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{$('#im-url').value=ev.target.result;};r.readAsDataURL(f);};},100);
+    setTimeout(function(){var fi=$('#im-file');if(fi)fi.onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){$('#im-url').value=ev.target.result;};r.readAsDataURL(f);};},100);
 }
 function doInsImg(){
-    const u=$('#im-url').value.trim(),a=$('#im-alt').value.trim()||'Image';
+    var u=$('#im-url').value.trim(),a=$('#im-alt').value.trim()||'Image';
     if(!u){toast('Provide URL or upload','warning');return;}
     insAt(S.textMode==='markdown'?'!['+a+']('+u+')':'<img src="'+u+'" alt="'+a+'" style="max-width:100%">');
     closeModal();toast('Image inserted','success');
@@ -990,17 +1020,17 @@ function showInsTable(){
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="doInsTable()">Generate</button>');
 }
 function doInsTable(){
-    const rows=Math.max(1,Math.min(50,parseInt($('#tb-r').value)||3));
-    const cols=Math.max(1,Math.min(20,parseInt($('#tb-c').value)||3));
-    const hdr=$('#tb-h').checked;
-    let t='';
+    var rows=Math.max(1,Math.min(50,parseInt($('#tb-r').value)||3));
+    var cols=Math.max(1,Math.min(20,parseInt($('#tb-c').value)||3));
+    var hdr=$('#tb-h').checked;
+    var t='';
     if(S.textMode==='markdown'){
-        if(hdr){t+='| '+Array(cols).fill('Header').join(' | ')+' |\n| '+Array(cols).fill('---').join(' | ')+' |\n';for(let r=1;r<rows;r++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
-        else{for(let r=0;r<rows;r++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
+        if(hdr){t+='| '+Array(cols).fill('Header').join(' | ')+' |\n| '+Array(cols).fill('---').join(' | ')+' |\n';for(var r=1;r<rows;r++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
+        else{for(var r2=0;r2<rows;r2++)t+='| '+Array(cols).fill('Cell').join(' | ')+' |\n';}
     } else {
         t+='<table>\n';
-        if(hdr){t+='  <thead>\n    <tr>\n';for(let c=0;c<cols;c++)t+='      <th>Header</th>\n';t+='    </tr>\n  </thead>\n  <tbody>\n';for(let r=1;r<rows;r++){t+='    <tr>\n';for(let c=0;c<cols;c++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
-        else{t+='  <tbody>\n';for(let r=0;r<rows;r++){t+='    <tr>\n';for(let c=0;c<cols;c++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
+        if(hdr){t+='  <thead>\n    <tr>\n';for(var c=0;c<cols;c++)t+='      <th>Header</th>\n';t+='    </tr>\n  </thead>\n  <tbody>\n';for(var r3=1;r3<rows;r3++){t+='    <tr>\n';for(var c2=0;c2<cols;c2++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
+        else{t+='  <tbody>\n';for(var r4=0;r4<rows;r4++){t+='    <tr>\n';for(var c3=0;c3<cols;c3++)t+='      <td>Cell</td>\n';t+='    </tr>\n';}t+='  </tbody>\n';}
         t+='</table>';
     }
     insAt('\n'+t+'\n');closeModal();toast('Table inserted','success');
@@ -1018,10 +1048,10 @@ function setZoom(lv){
     $('#st-zoom').textContent=S.zoom+'%';
 }
 function toggleFS(){
-    if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});$('#app').classList.add('fullscreen');S.fullscreen=true;}
+    if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(function(){});$('#app').classList.add('fullscreen');S.fullscreen=true;}
     else{document.exitFullscreen();$('#app').classList.remove('fullscreen');S.fullscreen=false;}
 }
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){$('#app').classList.remove('fullscreen');S.fullscreen=false;}});
+document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement){$('#app').classList.remove('fullscreen');S.fullscreen=false;}});
 
 function toggleDF(){
     S.distractionFree=!S.distractionFree;$('#app').classList.toggle('distraction-free',S.distractionFree);
@@ -1034,9 +1064,9 @@ function toggleFocus(){
 }
 function updateFocusOverlay(){
     if(!S.focusMode) return;
-    const p=editor.selectionStart,li=editor.value.substring(0,p).split('\n').length-1;
-    const lh=parseFloat(getComputedStyle(editor).lineHeight)*(S.zoom/100);
-    const top=li*lh-editor.scrollTop,pad=lh*2.5;
+    var p=editor.selectionStart,li=editor.value.substring(0,p).split('\n').length-1;
+    var lh=parseFloat(getComputedStyle(editor).lineHeight)*(S.zoom/100);
+    var top=li*lh-editor.scrollTop,pad=lh*2.5;
     focusOverlay.style.background='linear-gradient(to bottom,rgba(0,0,0,0.6) '+Math.max(0,top-pad)+'px,transparent '+top+'px,transparent '+(top+lh)+'px,rgba(0,0,0,0.6) '+(top+lh+pad)+'px)';
 }
 function setSplit(ep,el){
@@ -1046,7 +1076,7 @@ function setSplit(ep,el){
     if(ep===100){previewPanel.style.display='none';divider.style.display='none';editorPanel.style.flex='1';}
     else if(ep===0){editorPanel.style.display='none';divider.style.display='none';previewPanel.style.flex='1';}
     else{editorPanel.style.flex='none';previewPanel.style.flex='none';editorPanel.style.width=ep+'%';previewPanel.style.width=(100-ep)+'%';}
-    ['split-50','split-70','split-30','split-editor','split-preview'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    ['split-50','split-70','split-30','split-editor','split-preview'].forEach(function(a){var i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
 }
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;sidebarEl.classList.toggle('open',S.sidebarOpen);updateOutline();}
 function toggleSB(el){S.statusBar=!S.statusBar;$('#status-bar').classList.toggle('hidden',!S.statusBar);if(el)el.classList.toggle('checked',S.statusBar);}
@@ -1054,7 +1084,7 @@ function toggleLN(el){S.lineNumbers=!S.lineNumbers;lineNums.classList.toggle('hi
 function toggleInv(){S.showInvisible=!S.showInvisible;updatePreview();toast('Invisible chars: '+(S.showInvisible?'Visible':'Hidden'));}
 function setTheme(t,el){
     S.theme=t;document.documentElement.setAttribute('data-theme',t);
-    ['theme-light','theme-dark','theme-cyberpunk','theme-sepia'].forEach(a=>{const i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
+    ['theme-light','theme-dark','theme-cyberpunk','theme-sepia'].forEach(function(a){var i=$('.dropdown-item[data-action="'+a+'"]');if(i)i.classList.toggle('checked',el&&el.dataset.action===a);});
     toast('Theme: '+t.charAt(0).toUpperCase()+t.slice(1));
 }
 
@@ -1062,13 +1092,13 @@ function setTheme(t,el){
 // TOOLS
 // ============================================================
 function showWordCount(){
-    const t=editor.value,c=t.length,cns=t.replace(/\s/g,'').length;
-    const w=t.trim()?t.trim().split(/\s+/).length:0;
-    const s=t.trim()?t.split(/[.!?]+/).filter(x=>x.trim()).length:0;
-    const p=t.trim()?t.split(/\n\s*\n/).filter(x=>x.trim()).length:0;
-    const l=t.split('\n').length;
-    const syl=t.toLowerCase().replace(/[^a-z]/g,'').split('').reduce((a,c)=>a+('aeiouy'.includes(c)?1:0),0);
-    const rt=Math.max(1,Math.ceil(w/200)),st=Math.max(1,Math.ceil(w/130));
+    var t=editor.value,c=t.length,cns=t.replace(/\s/g,'').length;
+    var w=t.trim()?t.trim().split(/\s+/).length:0;
+    var s=t.trim()?t.split(/[.!?]+/).filter(function(x){return x.trim();}).length:0;
+    var p=t.trim()?t.split(/\n\s*\n/).filter(function(x){return x.trim();}).length:0;
+    var l=t.split('\n').length;
+    var syl=t.toLowerCase().replace(/[^a-z]/g,'').split('').reduce(function(a,c){return a+('aeiouy'.indexOf(c)!==-1?1:0);},0);
+    var rt=Math.max(1,Math.ceil(w/200)),st=Math.max(1,Math.ceil(w/130));
     openModal('Word Count & Analytics',
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
         dStatCard(c.toLocaleString(),'Characters')+dStatCard(cns.toLocaleString(),'Chars (no spaces)')+
@@ -1081,26 +1111,26 @@ function showWordCount(){
 function dStatCard(v,l){return '<div style="background:rgba(255,255,255,0.04);padding:14px;border-radius:8px;text-align:center"><div style="font-size:1.4rem;font-weight:700;color:var(--primary-bg)">'+v+'</div><div style="font-size:0.58rem;color:var(--text-muted);margin-top:4px">'+l+'</div></div>';}
 
 function grammarCheck(){
-    const t=editor.value,issues=[];
-    const ds=(t.match(/  +/g)||[]).length; if(ds>0) issues.push(ds+' instance(s) of double spaces');
+    var t=editor.value,issues=[];
+    var ds=(t.match(/  +/g)||[]).length; if(ds>0) issues.push(ds+' instance(s) of double spaces');
     if(t.trim().length>20&&!/[.!?]$/.test(t.trim())) issues.push('Document may be missing ending punctuation');
-    const rep=t.match(/\b(\w+)\s+\1\b/gi); if(rep) issues.push(rep.length+' repeated word(s): '+rep.slice(0,3).join(', ')+(rep.length>3?'...':''));
-    const long=t.split(/[.!?]+/).filter(x=>x.trim().split(/\s+/).length>30); if(long.length) issues.push(long.length+' very long sentence(s) (>30 words)');
-    if(t.includes('\t')) issues.push('Document contains tab characters');
+    var rep=t.match(/\b(\w+)\s+\1\b/gi); if(rep) issues.push(rep.length+' repeated word(s): '+rep.slice(0,3).join(', ')+(rep.length>3?'...':''));
+    var long=t.split(/[.!?]+/).filter(function(x){return x.trim().split(/\s+/).length>30;}); if(long.length) issues.push(long.length+' very long sentence(s) (>30 words)');
+    if(t.indexOf('\t')!==-1) issues.push('Document contains tab characters');
     if(!issues.length){openModal('Grammar Check','<p style="color:#4a4;padding:20px;text-align:center;font-size:1rem"><i class="fas fa-check-circle" style="margin-right:8px"></i>No grammar issues detected!</p>','<button class="m-btn" onclick="closeModal()">Close</button>');return;}
-    openModal('Grammar Check',issues.map(i=>'<div style="padding:8px 10px;background:rgba(255,200,50,0.08);border-left:3px solid #c8960a;border-radius:0 6px 6px 0;margin-bottom:6px;font-size:0.65rem;color:var(--text-secondary)"><i class="fas fa-exclamation-triangle" style="color:#c8960a;margin-right:6px"></i>'+i+'</div>').join(''),'<button class="m-btn" onclick="closeModal()">Close</button>');
+    openModal('Grammar Check',issues.map(function(i){return '<div style="padding:8px 10px;background:rgba(255,200,50,0.08);border-left:3px solid #c8960a;border-radius:0 6px 6px 0;margin-bottom:6px;font-size:0.65rem;color:var(--text-secondary)"><i class="fas fa-exclamation-triangle" style="color:#c8960a;margin-right:6px"></i>'+i+'</div>';}).join(''),'<button class="m-btn" onclick="closeModal()">Close</button>');
 }
 
-function sortLines(az){const l=editor.value.split('\n');l.sort((a,b)=>az?a.localeCompare(b):b.localeCompare(a));editor.value=l.join('\n');updateAll();toast('Sorted '+(az?'A-Z':'Z-A'),'success');}
-function remDupes(){const l=editor.value.split('\n'),u=[...new Set(l)],r=l.length-u.length;editor.value=u.join('\n');updateAll();toast('Removed '+r+' duplicate line(s)','success');}
-function trimWS(){const l=editor.value.split('\n');let c=0;editor.value=l.map(x=>{const t=x.replace(/\s+$/,'');if(t!==x)c++;return t;}).join('\n');updateAll();toast('Trimmed '+c+' line(s)','success');}
+function sortLines(az){var l=editor.value.split('\n');l.sort(function(a,b){return az?a.localeCompare(b):b.localeCompare(a);});editor.value=l.join('\n');updateAll();toast('Sorted '+(az?'A-Z':'Z-A'),'success');}
+function remDupes(){var l=editor.value.split('\n'),u=[],seen={};l.forEach(function(x){if(!seen[x]){seen[x]=true;u.push(x);}});var r=l.length-u.length;editor.value=u.join('\n');updateAll();toast('Removed '+r+' duplicate line(s)','success');}
+function trimWS(){var l=editor.value.split('\n');var c=0;editor.value=l.map(function(x){var t=x.replace(/\s+$/,'');if(t!==x)c++;return t;}).join('\n');updateAll();toast('Trimmed '+c+' line(s)','success');}
 
 function b64(enc){try{editor.value=enc?btoa(unescape(encodeURIComponent(editor.value))):decodeURIComponent(escape(atob(editor.value.trim())));updateAll();toast('Base64 '+(enc?'encoded':'decoded'),'success');}catch(e){toast('Base64 failed: '+e.message,'error');}}
 function urlEnc(enc){try{editor.value=enc?encodeURIComponent(editor.value):decodeURIComponent(editor.value.trim());updateAll();toast('URL '+(enc?'encoded':'decoded'),'success');}catch(e){toast('URL failed: '+e.message,'error');}}
 
 function htmlBeautify(){
-    let h=editor.value.replace(/>\s+</g,'><');let f='',ind=0;const tb='  ';
-    h.split(/(<[^>]+>)/g).filter(x=>x).forEach(tk=>{
+    var h=editor.value.replace(/>\s+</g,'><');var f='',ind=0;var tb='  ';
+    h.split(/(<[^>]+>)/g).filter(function(x){return x;}).forEach(function(tk){
         if(tk.match(/^<\/\w/)){ind=Math.max(0,ind-1);f+=tb.repeat(ind)+tk+'\n';}
         else if(tk.match(/^<\w[^>]*[^/]>$/)&&!tk.match(/^<(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)/i)){f+=tb.repeat(ind)+tk+'\n';ind++;}
         else f+=tb.repeat(ind)+tk+'\n';
@@ -1116,11 +1146,11 @@ function macroPlay(){
     if(!S.macroEvents.length){toast('No macro recorded','warning');return;}
     if(S.macroPlaying) return;S.macroPlaying=true;
     editor.focus();
-    let bt=0;
-    S.macroEvents.forEach((ev,i)=>{
-        const d=ev.t-bt;bt=ev.t;
-        setTimeout(()=>{
-            const ei={key:ev.key,code:ev.code,keyCode:ev.keyCode,shiftKey:ev.shift,ctrlKey:ev.ctrl,altKey:ev.alt,bubbles:true};
+    var bt=0;
+    S.macroEvents.forEach(function(ev,i){
+        var d=ev.t-bt;bt=ev.t;
+        setTimeout(function(){
+            var ei={key:ev.key,code:ev.code,keyCode:ev.keyCode,shiftKey:ev.shift,ctrlKey:ev.ctrl,altKey:ev.alt,bubbles:true};
             editor.dispatchEvent(new KeyboardEvent('keydown',ei));
             if(ev.key.length===1&&!ev.ctrl&&!ev.alt){
                 document.execCommand('insertText',false,ev.key);
@@ -1153,7 +1183,7 @@ function showDocs(){
         '</div>','<button class="m-btn" onclick="closeModal()">Close</button>');
 }
 function showShortcuts(){
-    const sc=[
+    var sc=[
         ['Ctrl+N','New File'],['Ctrl+O','Open File'],['Ctrl+S','Save'],['Ctrl+Shift+S','Save As'],
         ['Ctrl+Z','Undo'],['Ctrl+Y','Redo'],['Ctrl+X','Cut'],['Ctrl+C','Copy'],['Ctrl+V','Paste'],
         ['Ctrl+H','Find & Replace'],['Ctrl+A','Select All'],['Ctrl+D','Duplicate Line'],
@@ -1161,8 +1191,8 @@ function showShortcuts(){
         ['Ctrl+I','Italic Wrap'],['Ctrl+U','Underline Wrap'],['Ctrl+=','Zoom In'],
         ['Ctrl+-','Zoom Out'],['Ctrl+0','Actual Size'],['F11','Full Screen'],['Escape','Close Menus']
     ];
-    let h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px">';
-    sc.forEach(([k,d])=>{h+='<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;font-size:0.63rem"><span style="color:var(--text-secondary)">'+d+'</span><span style="color:var(--primary-bg);font-family:var(--font-mono);font-size:0.58rem">'+k+'</span></div>';});
+    var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px">';
+    sc.forEach(function(x){h+='<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;font-size:0.63rem"><span style="color:var(--text-secondary)">'+x[1]+'</span><span style="color:var(--primary-bg);font-family:var(--font-mono);font-size:0.58rem">'+x[0]+'</span></div>';});
     h+='</div>';
     openModal('Keyboard Shortcuts',h,'<button class="m-btn" onclick="closeModal()">Close</button>');
 }
@@ -1172,10 +1202,10 @@ function showBugReport(){
         '<button class="m-btn m-btn-secondary" onclick="closeModal()">Cancel</button><button class="m-btn" onclick="submitBug()">Submit</button>');
 }
 function submitBug(){
-    const d=$('#bug-desc').value.trim();
+    var d=$('#bug-desc').value.trim();
     if(!d){toast('Please describe the issue','warning');return;}
-    const e=$('#bug-email').value.trim();
-    const body=encodeURIComponent('Bug Report - Notebook v4.5\n\n'+d+'\n\nEmail: '+(e||'Not provided'));
+    var e=$('#bug-email').value.trim();
+    var body=encodeURIComponent('Bug Report - Notebook v4.5\n\n'+d+'\n\nEmail: '+(e||'Not provided'));
     window.open('mailto:dylatosh@notebook.dev?subject='+encodeURIComponent('Bug Report - Notebook v4.5')+'&body='+body);
     closeModal();toast('Opening email client','success');
 }
@@ -1213,50 +1243,35 @@ function showAbout(){
 }
 
 // ============================================================
-// MARKDOWN PARSER (lightweight, no external lib)
+// MARKDOWN PARSER
 // ============================================================
 function parseMD(md) {
-    let html = md;
-    // Code blocks (``` ... ```)
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+    var html = md;
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(m, lang, code) {
         return '<pre><code class="language-' + (lang || 'text') + '">' + escHTML(code.trim()) + '</code></pre>';
     });
-    // Inline code
     html = html.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 5px;border-radius:3px;font-family:monospace;font-size:0.9em">$1</code>');
-    // Headers
     html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
     html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
     html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
     html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
     html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-    // Horizontal rule
     html = html.replace(/^(---|\*\*\*|___)\s*$/gm, '<hr>');
-    // Images
     html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">');
-    // Links
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#2596be">$1</a>');
-    // Bold + Italic
     html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
     html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
-    // Bold
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-    // Italic
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-    // Strikethrough
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    // Blockquote
     html = html.replace(/^>\s+(.+)$/gm, '<blockquote style="border-left:3px solid #2596be;padding-left:12px;color:#555;margin:8px 0">$1</blockquote>');
-    // Unordered list
     html = html.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
     html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="padding-left:24px;margin:8px 0">$1</ul>');
-    // Ordered list
     html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-    // Paragraphs (lines not already wrapped in tags)
     html = html.replace(/^(?!<[hublopdi]|<li|<hr|<pre|<code|<blockquote)(.*\S.*)$/gm, '<p>$1</p>');
-    // Clean up empty paragraphs
     html = html.replace(/<p>\s*<\/p>/g, '');
     return html;
 }
@@ -1266,11 +1281,10 @@ function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 // PREVIEW ENGINE
 // ============================================================
 function getPreviewHTML() {
-    const t = editor.value;
+    var t = editor.value;
     if (S.textMode === 'html') return t;
     if (S.textMode === 'markdown') return parseMD(t);
-    // Plain text: escape and preserve whitespace
-    let escaped = escHTML(t);
+    var escaped = escHTML(t);
     if (S.showInvisible) {
         escaped = escaped.replace(/ /g, '&middot;').replace(/\t/g, '&rarr;   ').replace(/\n/g, '<br>\n');
     } else {
@@ -1279,8 +1293,8 @@ function getPreviewHTML() {
     return escaped;
 }
 function updatePreview() {
-    const html = getPreviewHTML();
-    const doc = preview.contentDocument || preview.contentWindow.document;
+    var html = getPreviewHTML();
+    var doc = preview.contentDocument || preview.contentWindow.document;
     doc.open();
     if (S.textMode === 'plain') {
         doc.write('<!DOCTYPE html><html><head><style>body{font-family:Helvetica,Arial,sans-serif;padding:20px;color:#222;line-height:1.6;font-size:14px;white-space:pre-wrap;word-wrap:break-word;}</style></head><body>' + html + '</body></html>');
@@ -1296,51 +1310,47 @@ function updatePreview() {
 // LINE NUMBERS
 // ============================================================
 function updateLineNums() {
-    const lines = editor.value.split('\n').length;
-    let nums = '';
-    for (let i = 1; i <= lines; i++) nums += i + '\n';
+    var lines = editor.value.split('\n').length;
+    var nums = '';
+    for (var i = 1; i <= lines; i++) nums += i + '\n';
     lineNums.textContent = nums;
 }
-
-// Sync scroll
-editor.addEventListener('scroll', () => {
-    lineNums.scrollTop = editor.scrollTop;
-});
+editor.addEventListener('scroll', function() { lineNums.scrollTop = editor.scrollTop; });
 
 // ============================================================
 // STATUS BAR
 // ============================================================
 function updateStatusBar() {
-    const t = editor.value;
+    var t = editor.value;
     $('#st-chars').textContent = t.length + ' chars';
     $('#st-words').textContent = (t.trim() ? t.trim().split(/\s+/).length : 0) + ' words';
     $('#st-lines').textContent = t.split('\n').length + ' lines';
-    const modeNames = { plain: 'Plain Text', html: 'HTML', markdown: 'Markdown' };
+    var modeNames = { plain: 'Plain Text', html: 'HTML', markdown: 'Markdown' };
     $('#st-mode').textContent = modeNames[S.textMode] || 'Plain Text';
     $('#st-zoom').textContent = S.zoom + '%';
 }
 
 // ============================================================
-// DOCUMENT OUTLINE (Sidebar)
+// DOCUMENT OUTLINE
 // ============================================================
 function updateOutline() {
     if (!S.sidebarOpen) return;
-    const el = $('#sidebar-outline');
+    var el = $('#sidebar-outline');
     if (S.textMode === 'html') {
-        const headings = editor.value.match(/<h([1-6])[^>]*>(.*?)<\/h\1>/gi) || [];
+        var headings = editor.value.match(/<h([1-6])[^>]*>(.*?)<\/h\1>/gi) || [];
         if (!headings.length) { el.textContent = 'No headings found.'; return; }
-        el.innerHTML = headings.map(h => {
-            const level = parseInt(h.match(/<h([1-6])/)[1]);
-            const text = h.replace(/<[^>]+>/g, '').trim();
-            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + (0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
+        el.innerHTML = headings.map(function(h) {
+            var level = parseInt(h.match(/<h([1-6])/)[1]);
+            var text = h.replace(/<[^>]+>/g, '').trim();
+            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + Math.max(0.5, 0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
         }).join('');
     } else if (S.textMode === 'markdown') {
-        const headings = editor.value.match(/^#{1,6}\s+.+$/gm) || [];
-        if (!headings.length) { el.textContent = 'No headings found.'; return; }
-        el.innerHTML = headings.map(h => {
-            const level = (h.match(/^#+/) || [''])[0].length;
-            const text = h.replace(/^#+\s+/, '').trim();
-            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + (0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
+        var headings2 = editor.value.match(/^#{1,6}\s+.+$/gm) || [];
+        if (!headings2.length) { el.textContent = 'No headings found.'; return; }
+        el.innerHTML = headings2.map(function(h) {
+            var level = (h.match(/^#+/) || [''])[0].length;
+            var text = h.replace(/^#+\s+/, '').trim();
+            return '<div style="padding:3px 0 3px ' + ((level - 1) * 10) + 'px;font-size:' + Math.max(0.5, 0.7 - level * 0.04) + 'rem;color:var(--text-secondary);cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(text) + '</div>';
         }).join('');
     } else {
         el.textContent = 'Outline available in HTML/Markdown mode.';
@@ -1361,38 +1371,26 @@ function updateAll() {
 // ============================================================
 // EDITOR EVENT LISTENERS
 // ============================================================
-editor.addEventListener('input', () => {
-    updateAll();
-    // Macro recording
-    if (S.macroRecording) {
-        // Keystrokes are captured in keydown handler below
-    }
-});
+editor.addEventListener('input', function() { updateAll(); });
 
-editor.addEventListener('keydown', (e) => {
-    // Macro recording
+editor.addEventListener('keydown', function(e) {
     if (S.macroRecording && !S.macroPlaying) {
         S.macroEvents.push({
-            t: Date.now(),
-            key: e.key,
-            code: e.code,
-            keyCode: e.keyCode,
-            shift: e.shiftKey,
-            ctrl: e.ctrlKey,
-            alt: e.altKey
+            t: Date.now(), key: e.key, code: e.code, keyCode: e.keyCode,
+            shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey
         });
     }
-    // Tab key handling
     if (e.key === 'Tab') {
         e.preventDefault();
         if (e.shiftKey) {
-            // Unindent
-            const s = editor.selectionStart;
-            const lineStart = editor.value.lastIndexOf('\n', s - 1) + 1;
-            const line = editor.value.substring(lineStart, editor.value.indexOf('\n', s));
-            if (line.startsWith('    ')) {
-                editor.value = editor.value.substring(0, lineStart) + line.substring(4) + editor.value.substring(lineStart + line.length);
-                editor.selectionStart = editor.selectionEnd = Math.max(lineStart, s - 4);
+            var s = editor.selectionStart;
+            var ls = editor.value.lastIndexOf('\n', s - 1) + 1;
+            var le = editor.value.indexOf('\n', s);
+            if (le === -1) le = editor.value.length;
+            var line = editor.value.substring(ls, le);
+            if (line.indexOf('    ') === 0) {
+                editor.value = editor.value.substring(0, ls) + line.substring(4) + editor.value.substring(le);
+                editor.selectionStart = editor.selectionEnd = Math.max(ls, s - 4);
                 updateAll();
             }
         } else {
@@ -1400,38 +1398,26 @@ editor.addEventListener('keydown', (e) => {
             updateAll();
         }
     }
-    // Focus mode overlay update on arrow keys
-    if (S.focusMode && ['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
+    if (S.focusMode && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter')) {
         setTimeout(updateFocusOverlay, 10);
     }
 });
-
-editor.addEventListener('click', () => {
-    if (S.focusMode) setTimeout(updateFocusOverlay, 10);
-});
-
-editor.addEventListener('keyup', () => {
-    if (S.focusMode) updateFocusOverlay();
-});
+editor.addEventListener('click', function() { if (S.focusMode) setTimeout(updateFocusOverlay, 10); });
+editor.addEventListener('keyup', function() { if (S.focusMode) updateFocusOverlay(); });
 
 // ============================================================
 // DIVIDER DRAG
 // ============================================================
-let isDragging = false;
-divider.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    divider.classList.add('dragging');
-    e.preventDefault();
-});
-document.addEventListener('mousemove', (e) => {
+var isDragging = false;
+divider.addEventListener('mousedown', function(e) { isDragging = true; divider.classList.add('dragging'); e.preventDefault(); });
+document.addEventListener('mousemove', function(e) {
     if (!isDragging) return;
-    const mainRect = mainContent.getBoundingClientRect();
-    const sidebarW = S.sidebarOpen ? 220 : 0;
-    const x = e.clientX - mainRect.left - sidebarW;
-    const totalW = mainRect.width - sidebarW;
-    let pct = (x / totalW) * 100;
+    var mainRect = mainContent.getBoundingClientRect();
+    var sidebarW = S.sidebarOpen ? 220 : 0;
+    var x = e.clientX - mainRect.left - sidebarW;
+    var totalW = mainRect.width - sidebarW;
+    var pct = (x / totalW) * 100;
     pct = Math.max(10, Math.min(90, pct));
-    // Remove preset checkmarks since we're doing custom
     editorPanel.style.display = 'flex';
     previewPanel.style.display = 'flex';
     divider.style.display = 'block';
@@ -1439,25 +1425,19 @@ document.addEventListener('mousemove', (e) => {
     previewPanel.style.flex = 'none';
     editorPanel.style.width = pct + '%';
     previewPanel.style.width = (100 - pct) + '%';
-    ['split-50', 'split-70', 'split-30', 'split-editor', 'split-preview'].forEach(a => {
-        const i = $('.dropdown-item[data-action="' + a + '"]');
+    ['split-50','split-70','split-30','split-editor','split-preview'].forEach(function(a) {
+        var i = $('.dropdown-item[data-action="'+a+'"]');
         if (i) i.classList.remove('checked');
     });
 });
-document.addEventListener('mouseup', () => {
-    if (isDragging) {
-        isDragging = false;
-        divider.classList.remove('dragging');
-    }
-});
+document.addEventListener('mouseup', function() { if (isDragging) { isDragging = false; divider.classList.remove('dragging'); } });
 
 // ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
-document.addEventListener('keydown', (e) => {
-    const ctrl = e.ctrlKey || e.metaKey;
-    const shift = e.shiftKey;
-
+document.addEventListener('keydown', function(e) {
+    var ctrl = e.ctrlKey || e.metaKey;
+    var shift = e.shiftKey;
     if (ctrl && e.key === 'n') { e.preventDefault(); handleAction('new-file'); }
     else if (ctrl && e.key === 'o') { e.preventDefault(); handleAction('open-file'); }
     else if (ctrl && !shift && e.key === 's') { e.preventDefault(); handleAction('save'); }
@@ -1484,9 +1464,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================================
-// AUTO-SAVE (every 30 seconds)
+// AUTO-SAVE
 // ============================================================
-setInterval(() => {
+setInterval(function() {
     if (S.currentFile && editor.value) {
         localStorage.setItem('nb_file_' + S.currentFile, editor.value);
     }
@@ -1495,23 +1475,18 @@ setInterval(() => {
 // ============================================================
 // INITIAL SETUP
 // ============================================================
-// Apply saved theme
-const savedTheme = localStorage.getItem('nb_theme');
-if (savedTheme && ['light', 'dark', 'cyberpunk', 'sepia'].includes(savedTheme)) {
+var savedTheme = localStorage.getItem('nb_theme');
+if (savedTheme && ['light','dark','cyberpunk','sepia'].indexOf(savedTheme) !== -1) {
     S.theme = savedTheme;
     document.documentElement.setAttribute('data-theme', savedTheme);
-    // Update checkmarks
-    ['theme-light', 'theme-dark', 'theme-cyberpunk', 'theme-sepia'].forEach(a => {
-        const i = $('.dropdown-item[data-action="' + a + '"]');
+    ['theme-light','theme-dark','theme-cyberpunk','theme-sepia'].forEach(function(a) {
+        var i = $('.dropdown-item[data-action="'+a+'"]');
         if (i) i.classList.toggle('checked', a === 'theme-' + savedTheme);
     });
 }
-// Save theme on change
-const origSetTheme = setTheme;
-setTheme = function(t, el) {
-    localStorage.setItem('nb_theme', t);
-    origSetTheme(t, el);
-};
+// Wrap setTheme to persist
+var _origSetTheme = setTheme;
+setTheme = function(t, el) { localStorage.setItem('nb_theme', t); _origSetTheme(t, el); };
 </script>
 </body>
 </html>
