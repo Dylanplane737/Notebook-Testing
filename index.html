@@ -403,7 +403,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-primary);background
 <div class="status-item"><i class="fas fa-code"></i><span id="st-mode">Plain Text</span></div>
 <div class="status-item"><i class="fas fa-magnifying-glass"></i><span id="st-zoom">100%</span></div>
 <div class="status-spacer"></div>
-<div class="status-credit">Made by Dylatosh</div>
+<div class="status-credit">Made by Dylan H</div>
 </footer>
 </div>
 
@@ -426,7 +426,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-primary);background
 <script>
 /* =====================================================================
    NOTEBOOK v4.5 — Complete Application Logic
-   Made by Dylatosh
+   Made by Dylan Hailey
    ===================================================================== */
 
 // === Application State ===
@@ -722,7 +722,7 @@ function loadSavedContent() {
         var c = localStorage.getItem('nb_file_'+cur);
         if (c !== null) { editor.value=c; S.currentFile=cur; S.textMode='html'; updateModeChecks(); return; }
     }
-    editor.value = '<!-- Welcome to Notebook v4.5 -->\n<!-- Made by Dylatosh -->\n\n<h1>Hello, World</h1>\n<p>Start typing in the editor on the left, and see the live preview on the right.</p>\n\n<p>Switch between <strong>Plain Text</strong>, <strong>HTML</strong>, and <strong>Markdown</strong> modes from the Format menu.</p>\n\n<ul>\n  <li>Full menu system with nested dropdowns</li>\n  <li>Live split-screen preview via iframe</li>\n  <li>Multiple export formats (TXT, RTF, MD, HTML, PDF, XML, JSON)</li>\n  <li>Four editor themes: Light, Dark, Cyberpunk, Sepia</li>\n  <li>Macro recorder for keystroke playback</li>\n  <li>Base64 and URL encoding/decoding</li>\n  <li>HTML beautifier and minifier</li>\n  <li>Find and replace with wrap-around</li>\n  <li>Document outline sidebar</li>\n  <li>And much more...</li>\n</ul>';
+    editor.value = '<!-- Welcome to Notebook v4.5 -->\n<!-- Made by Dylan Hailey -->\n\n<h1>Hello, World</h1>\n<p>Start typing in the editor on the left, and see the live preview on the right.</p>\n\n<p>Switch between <strong>Plain Text</strong>, <strong>HTML</strong>, and <strong>Markdown</strong> modes from the Format menu.</p>\n\n<ul>\n  <li>Full menu system with nested dropdowns</li>\n  <li>Live split-screen preview via iframe</li>\n  <li>Multiple export formats (TXT, RTF, MD, HTML, PDF, XML, JSON)</li>\n  <li>Four editor themes: Light, Dark, Cyberpunk, Sepia</li>\n  <li>Macro recorder for keystroke playback</li>\n  <li>Base64 and URL encoding/decoding</li>\n  <li>HTML beautifier and minifier</li>\n  <li>Find and replace with wrap-around</li>\n  <li>Document outline sidebar</li>\n  <li>And much more...</li>\n</ul>';
     S.textMode = 'html';
     updateModeChecks();
 }
@@ -1210,7 +1210,7 @@ function submitBug(){
     closeModal();toast('Opening email client','success');
 }
 function showUpdates(){
-    openModal('Check for Updates','<div style="text-align:center;padding:30px 0"><i class="fas fa-arrows-rotate" style="font-size:2rem;color:var(--primary-bg);margin-bottom:16px;display:block"></i><p style="font-size:0.9rem;font-weight:600;margin-bottom:8px">You are up to date</p><p style="color:var(--text-muted)">Notebook v4.5 is the latest version available.</p><p style="color:var(--text-muted);margin-top:4px;font-size:0.6rem">Build 2025.06 | Made by Dylatosh</p></div>','<button class="m-btn" onclick="closeModal()">Close</button>');
+    openModal('Check for Updates','<div style="text-align:center;padding:30px 0"><i class="fas fa-arrows-rotate" style="font-size:2rem;color:var(--primary-bg);margin-bottom:16px;display:block"></i><p style="font-size:0.9rem;font-weight:600;margin-bottom:8px">You are up to date</p><p style="color:var(--text-muted)">Notebook v4.5 is the latest version available.</p><p style="color:var(--text-muted);margin-top:4px;font-size:0.6rem">Build 2026.05 | Made by Dylatosh</p></div>','<button class="m-btn" onclick="closeModal()">Close</button>');
 }
 function showAbout(){
     openModal('About Notebook v4.5',
