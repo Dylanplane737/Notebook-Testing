@@ -697,12 +697,36 @@ fileInput.addEventListener('change', function(e) {
     r.readAsText(f); fileInput.value='';
 });
 
-function actionSave() {
-    var n = S.currentFile || 'untitled';
-    localStorage.setItem('nb_file_'+n, editor.value);
-    localStorage.setItem('nb_current', n);
-    addRecent(n, editor.value);
-    toast('Saved: '+n, 'success');
+async function actionSave() {
+    try {
+        // This opens the real ChromeOS "Save" window
+        const fileHandle = await window.showSaveFilePicker({
+            suggestedName: S.currentFile || 'untitled.txt',
+            types: [{
+                description: 'Text Files',
+                accept: { 'text/plain': ['.txt'], 'text/html': ['.html'], 'text/markdown': ['.md'] }
+            }]
+        });
+        
+        // This connects to the real file on your hard drive
+        const writable = await fileHandle.createWritable();
+        
+        // This dumps your editor text directly into the file
+        await writable.write(editor.value);
+        await writable.close();
+        
+        // Keep your recent files list updated!
+        S.currentFile = fileHandle.name;
+        addRecent(fileHandle.name, editor.value);
+        toast('Saved to disk: ' + fileHandle.name, 'success');
+    } catch (err) {
+        // If you hit "Cancel" on the save screen, it throws an error.
+        // This just hides the error so it doesn't annoy you.
+        if (err.name !== 'AbortError') {
+            toast('Save failed', 'error');
+        }
+    }
+}
 }
 
 function actionSaveAs() {
