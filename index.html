@@ -699,7 +699,7 @@ fileInput.addEventListener('change', function(e) {
 
 async function actionSave() {
     try {
-        // This opens the real ChromeOS "Save" window
+        // 1. Try the real ChromeOS save dialog
         const fileHandle = await window.showSaveFilePicker({
             suggestedName: S.currentFile || 'untitled.txt',
             types: [{
@@ -708,23 +708,30 @@ async function actionSave() {
             }]
         });
         
-        // This connects to the real file on your hard drive
         const writable = await fileHandle.createWritable();
-        
-        // This dumps your editor text directly into the file
         await writable.write(editor.value);
         await writable.close();
         
-        // Keep your recent files list updated!
         S.currentFile = fileHandle.name;
         addRecent(fileHandle.name, editor.value);
         toast('Saved to disk: ' + fileHandle.name, 'success');
+
     } catch (err) {
-        // If you hit "Cancel" on the save screen, it throws an error.
-        // This just hides the error so it doesn't annoy you.
-        if (err.name !== 'AbortError') {
-            toast('Save failed', 'error');
-        }
+        // 2. If the school blocked the API (or user hit Cancel), do this instead:
+        if (err.name === 'AbortError') return; // User just hit cancel, do nothing
+        
+        // THE UNSTOPPABLE DOWNLOAD TRICK
+        var b = new Blob([editor.value], {type: 'text/plain'});
+        var u = URL.createObjectURL(b);
+        var a = document.createElement('a');
+        a.href = u;
+        a.download = S.currentFile || 'untitled.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(u);
+        
+        toast('Downloaded to your Chromebook!', 'success');
     }
 }
 
