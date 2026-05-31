@@ -1,0 +1,8 @@
+{
+  "name": "Notebook v4.5",
+  "short_name": "Notebook",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#2596be",
+  "description": "A powerful text editor by Dylan Hailey"
+}
